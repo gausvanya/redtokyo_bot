@@ -1,0 +1,7 @@
+[build]
+rustflags = [
+    "-C", "target-cpu=znver3",
+]
+
+[env]
+CHRONO_TZ_FILTER = "Europe/Moscow"
