@@ -28,7 +28,7 @@ pub async fn captcha_callback_handler(
     call: CallbackQuery,
     Extension(db): Extension<DatabaseConnection>,
     Extension(args): Extension<ParsedCommand>,
-) -> HandlerResult {
+) -> anyhow::Result<()> {
     let chat_id = args.require("chat_id").parse::<i64>().unwrap_or(0);
     let user_id = args.require("user_id").parse::<i64>().unwrap_or(0);
     let code = args.require("code");
@@ -50,8 +50,13 @@ pub async fn captcha_callback_handler(
         )
         .await?;
 
-        bot.send(ApproveChatJoinRequest::new(chat_id, user_id))
-            .await?;
+        if bot
+            .send(ApproveChatJoinRequest::new(chat_id, user_id))
+            .await
+            .is_err()
+        {
+            return Ok(());
+        }
     } else {
         bot.send(
             EditMessageText::new()
@@ -61,8 +66,13 @@ pub async fn captcha_callback_handler(
         )
         .await?;
 
-        bot.send(DeclineChatJoinRequest::new(chat_id, user_id))
-            .await?;
+        if bot
+            .send(DeclineChatJoinRequest::new(chat_id, user_id))
+            .await
+            .is_err()
+        {
+            return Ok(());
+        }
 
         bot.send(
             BanChatMember::new(chat_id, user_id)
@@ -70,7 +80,6 @@ pub async fn captcha_callback_handler(
         )
         .await?;
     }
-
     Ok(())
 }
 
@@ -150,7 +159,7 @@ pub async fn repeat_reg_callback_handler(
     call: CallbackQuery,
     Extension(db): Extension<DatabaseConnection>,
     Extension(args): Extension<ParsedCommand>,
-) -> HandlerResult {
+) -> anyhow::Result<()> {
     let chat_id = args.require("chat_id").parse::<i64>().unwrap_or(0);
     let user_id = args.require("user_id").parse::<i64>().unwrap_or(0);
 
@@ -175,11 +184,12 @@ pub async fn repeat_reg_callback_handler(
             let reg_date_msk = Moscow
                 .timestamp_opt(reg_timestamp_seconds, 0)
                 .single()
-                .expect("Invalid ts");
+                .expect("invalid ts");
 
             if reg_date_msk < year_ago_msk {
                 bot.send(ApproveChatJoinRequest::new(chat_id, user_id))
                     .await?;
+
                 let captcha_repo = CaptchaRepo::new(db);
                 let _ = captcha_repo.insert(chat_id, user_id).await;
 
@@ -195,6 +205,7 @@ pub async fn repeat_reg_callback_handler(
             } else {
                 bot.send(DeclineChatJoinRequest::new(chat_id, user_id))
                     .await?;
+
                 if let Some(msg) = call.message {
                     bot.send(EditMessageText::new().chat_id(msg.chat().id()).message_id(msg.message_id()).text("❌ Заявка в чат отклонена, вы не проходите по минимальной дате регистрации в Iris")).await?;
                 }

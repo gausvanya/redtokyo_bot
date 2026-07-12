@@ -40,21 +40,23 @@ pub async fn captcha_chat_join_request_handler(
 
         let repo = CaptchaRepo::new(db_clone);
 
-        match repo.get(chat_id, user_id).await {
-            Ok(Some(_)) => {}
-
-            _ => {
-                let _ = bot_clone
-                    .send(DeclineChatJoinRequest::new(chat_id, user_id))
-                    .await;
-
-                let _ = bot_clone
-                    .send(
-                        BanChatMember::new(chat_id, user_id)
-                            .until_date(get_current_datetime().and_utc().timestamp() + 300),
-                    )
-                    .await;
+        if !repo.get(chat_id, user_id).await.is_ok() {
+            if bot_clone
+                .send(DeclineChatJoinRequest::new(chat_id, user_id))
+                .await
+                .is_err()
+            {
+                return;
             }
+
+            if bot_clone
+                .send(
+                    BanChatMember::new(chat_id, user_id)
+                        .until_date(get_current_datetime().and_utc().timestamp() + 300),
+                )
+                .await
+                .is_err()
+            {}
         }
     });
 
@@ -79,8 +81,13 @@ pub async fn captcha_chat_join_request_handler(
         }
 
         if nft_count >= 1 || regular_count >= 3 {
-            bot.send(ApproveChatJoinRequest::new(chat_id, user_id))
-                .await?;
+            if bot
+                .send(ApproveChatJoinRequest::new(chat_id, user_id))
+                .await
+                .is_err()
+            {
+                return Ok(());
+            }
 
             captcha_repo.insert(chat_id, user_id).await?;
         } else {
@@ -108,14 +115,24 @@ pub async fn captcha_chat_join_request_handler(
                     .expect("Invalid timestamp");
 
                 if reg_date_msk < year_ago_msk {
-                    bot.send(ApproveChatJoinRequest::new(chat_id, user_id))
-                        .await?;
+                    if bot
+                        .send(ApproveChatJoinRequest::new(chat_id, user_id))
+                        .await
+                        .is_err()
+                    {
+                        return Ok(());
+                    }
                     bot.send(SendMessage::new(user_id, "✅ Заявка в чат принята!"))
                         .await?;
                     captcha_repo.insert(chat_id, user_id).await?;
                 } else {
-                    bot.send(DeclineChatJoinRequest::new(chat_id, user_id))
-                        .await?;
+                    if bot
+                        .send(DeclineChatJoinRequest::new(chat_id, user_id))
+                        .await
+                        .is_err()
+                    {
+                        return Ok(());
+                    }
                     bot.send(SendMessage::new(user_id, "❌ Заявка в чат отклонена, вы не проходите по минимальной дате регистрации в Iris")).await?;
                 }
             }
