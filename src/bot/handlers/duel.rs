@@ -86,7 +86,7 @@ pub async fn duel_command_handler(
                         user_id,
                         Some(msg_sent.message_id()),
                     ))
-                    .reply_parameters(ReplyParameters::new(msg_sent.message_id())),
+                    .reply_parameters(ReplyParameters::new(msg_sent.message_id()).chat_id(chat_id)),
             )
             .await?;
 
