@@ -123,7 +123,7 @@ where
                     .bot
                     .send(
                         MessageMethods::send(msg)
-                            .chat_id(ADMIN_CHAT_ID)
+                            .chat_id(chat_id)
                             .reply_parameters_option(None::<ReplyParameters>)
                             .reply_markup(antispam_keyboard(chat_id, user_id, None))
                             .text(msg_text.clone()),
@@ -140,7 +140,7 @@ where
                     .send(
                         MessageMethods::send(msg)
                             .chat_id(ADMIN_CHAT_ID)
-                            .reply_parameters(ReplyParameters::new(msg_id))
+                            .reply_parameters(ReplyParameters::new(msg_id).chat_id(chat_id))
                             .reply_markup(antispam_keyboard(chat_id, user_id, Some(msg_id)))
                             .text(msg_text),
                     )
