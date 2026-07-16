@@ -40,23 +40,22 @@ pub async fn captcha_chat_join_request_handler(
 
         let repo = CaptchaRepo::new(db_clone);
 
-        if !repo.get(chat_id, user_id).await.is_ok() {
-            if bot_clone
-                .send(DeclineChatJoinRequest::new(chat_id, user_id))
-                .await
-                .is_err()
-            {
+        match repo.get(chat_id, user_id).await {
+            Ok(Some(_)) => {
                 return;
             }
-
-            if bot_clone
-                .send(
-                    BanChatMember::new(chat_id, user_id)
-                        .until_date(get_current_datetime().and_utc().timestamp() + 300),
-                )
-                .await
-                .is_err()
-            {}
+            Ok(None) => {
+                let _ = bot_clone
+                    .send(DeclineChatJoinRequest::new(chat_id, user_id))
+                    .await;
+                let _ = bot_clone
+                    .send(
+                        BanChatMember::new(chat_id, user_id)
+                            .until_date(get_current_datetime().and_utc().timestamp() + 300),
+                    )
+                    .await;
+            }
+            Err(e) => tracing::error!("Ошибка проверки капчи в spawn: {:?}", e)
         }
     });
 
