@@ -41,9 +41,7 @@ pub async fn captcha_chat_join_request_handler(
         let repo = CaptchaRepo::new(db_clone);
 
         match repo.get(chat_id, user_id).await {
-            Ok(Some(_)) => {
-                return;
-            }
+            Ok(Some(_)) => {}
             Ok(None) => {
                 let _ = bot_clone
                     .send(DeclineChatJoinRequest::new(chat_id, user_id))
@@ -140,7 +138,7 @@ pub async fn captcha_chat_join_request_handler(
         let user = event.from;
         let user_mention = get_user_mention(
             user.id,
-            user.username.map(|s| s.to_string()),
+            user.username.as_deref(),
             user.first_name.parse()?,
         );
         bot.send(
