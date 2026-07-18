@@ -10,7 +10,7 @@ use crate::database::models::scam_base;
 use crate::database::repo::scam_base::ScamBaseRepo;
 use sea_orm::{DatabaseConnection, IntoActiveModel, Set};
 use telers::event::simple::HandlerResult;
-use telers::methods::{SendDocument, SendMediaGroup, SendPhoto, SendVideo};
+use telers::methods::{DeleteMessage, SendDocument, SendMediaGroup, SendPhoto, SendVideo};
 use telers::types::{
     FileId, InputMedia, InputMediaPhoto, InputMediaVideo, Message, ReplyParameters,
 };
@@ -59,8 +59,8 @@ pub async fn set_scam_command_handler(
         .await?;
 
     if let Some(user) = user_obj {
-        let user_mention = get_user_mention(user.id, user.username, user.full_name);
-        let admin_mention = get_user_mention(admin.0, admin.1, admin.2);
+        let user_mention = get_user_mention(user.id, user.username.as_deref(), user.full_name);
+        let admin_mention = get_user_mention(admin.0, admin.1.as_deref(), admin.2.to_string());
         let url = format!(
             "https://t.me/c/{}/{}",
             msg.chat().id().to_string().replace("-100", ""),
@@ -178,18 +178,42 @@ pub async fn set_scam_command_handler(
 
             let scam_base_repo = ScamBaseRepo::new(db);
 
-            scam_base_repo
-                .insert(
-                    msg.chat().id(),
-                    user.id,
-                    reply_msg.message_id(),
-                    admin.0,
-                    SCAM_CHANNEL_ID,
-                    s_msg.message_id(),
-                    reason,
-                    true,
-                )
-                .await?;
+            let result = scam_base_repo.get(user.id).await;
+
+            match result {
+                Ok(Some(i)) => {
+                    let model = i.0;
+
+                    let channel_chat_id = model.channel_chat_id;
+                    let channel_message_id = model.channel_message_id;
+
+                    let mut active_model = model.into_active_model();
+                    active_model.chat_id = Set(msg.chat().id());
+                    active_model.status = Set(true);
+                    active_model.message_id = Set(reply_msg.message_id());
+                    active_model.admin_id = Set(admin.0);
+                    active_model.channel_message_id = Set(s_msg.message_id());
+                    active_model.reason = Set(reason);
+                    scam_base_repo.update(active_model).await?;
+
+                    bot.send(DeleteMessage::new(channel_chat_id, channel_message_id)).await?;
+                }
+                _ => {
+                    scam_base_repo
+                        .insert(
+                            msg.chat().id(),
+                            user.id,
+                            reply_msg.message_id(),
+                            admin.0,
+                            SCAM_CHANNEL_ID,
+                            s_msg.message_id(),
+                            reason,
+                            true,
+                        )
+                        .await?;
+                }
+            }
+
         }
     }
     Ok(())
@@ -213,7 +237,7 @@ pub async fn remove_scam_command_handler(
         .await?;
 
     if let Some(user) = user_obj {
-        let user_mention = get_user_mention(user.id, user.username, user.full_name);
+        let user_mention = get_user_mention(user.id, user.username.as_deref(), user.full_name);
 
         let scam_base_repo = ScamBaseRepo::new(db);
 
@@ -263,7 +287,7 @@ pub async fn reason_scam_command_handler(
         .await?;
 
     if let Some(user) = user_obj {
-        let user_mention = get_user_mention(user.id, user.username, user.full_name);
+        let user_mention = get_user_mention(user.id, user.username.as_deref(), user.full_name);
 
         let scam_base_repo = ScamBaseRepo::new(db);
 
@@ -272,7 +296,7 @@ pub async fn reason_scam_command_handler(
         let (photo, msg_text) = match scam_base {
             Some((scam_base, Some(admin_user))) => {
                 let admin_mention =
-                    get_user_mention(admin_user.id, admin_user.username, admin_user.full_name);
+                    get_user_mention(admin_user.id, admin_user.username.as_deref(), admin_user.full_name);
 
                 let status = if scam_base.status {
                     "находится"

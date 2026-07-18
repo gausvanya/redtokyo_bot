@@ -75,8 +75,7 @@ impl ScamBaseRepo {
                         scam_base::Column::ChannelMessageId,
                         scam_base::Column::Reason,
                         scam_base::Column::Status,
-                    ])
-                    .to_owned(),
+                    ]).do_nothing().to_owned(),
             )
             .exec_with_returning(&self.db)
             .await
