@@ -35,7 +35,7 @@ pub async fn set_garant_command_handler(
         let garant_repo = GarantRepo::new(db);
         let _ = garant_repo.insert(user.id, comment).await;
 
-        let user_mention = get_user_mention(user.id, user.username, user.full_name);
+        let user_mention = get_user_mention(user.id, user.username.as_deref(), user.full_name);
 
         bot.send(MessageMethods::send(&msg).text(format!(
             "{} {} добавлен в список гарантов RedTokyo",
@@ -68,7 +68,7 @@ pub async fn remove_garant_command_handler(
     if let Some(user) = user_obj {
         let garant_repo = GarantRepo::new(db);
         let is_garant = garant_repo.get(user.id).await?;
-        let user_mention = get_user_mention(user.id, user.username, user.full_name);
+        let user_mention = get_user_mention(user.id, user.username.as_deref(), user.full_name);
 
         if let Some(garant_model) = is_garant {
             let _ = garant_repo.delete(garant_model).await;
@@ -105,7 +105,7 @@ pub async fn garant_list_command_handler(
         for (garant, users) in garants {
             if let Some(user) = users.first() {
                 let user_mention =
-                    get_user_mention(user.id, user.username.clone(), user.full_name.clone());
+                    get_user_mention(user.id, user.username.as_deref(), user.full_name.clone());
                 buffer.push_str(&format!(
                     "{} {} - {}\n",
                     Emoji::RadioButton,
@@ -133,7 +133,7 @@ pub async fn garant_call_command_handler(
     Extension(db): Extension<DatabaseConnection>,
 ) -> anyhow::Result<()> {
     let (user_id, username, full_name) = get_user_info(&msg);
-    let user_mention = get_user_mention(user_id, username, full_name);
+    let user_mention = get_user_mention(user_id, username.as_deref(), full_name.to_string());
     let reason = args.get("reason").unwrap_or_default();
 
     let garant_repo = GarantRepo::new(db);

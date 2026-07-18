@@ -36,8 +36,8 @@ impl GetUserInfo {
             let (id, username, full_name) = get_user_info(reply_msg);
             return Ok(Some(UserInfo {
                 id,
-                username,
-                full_name,
+                username: username.map(|b| b.into_string()),
+                full_name: full_name.into_string(),
             }));
         }
 

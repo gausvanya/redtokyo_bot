@@ -45,7 +45,7 @@ where
             let (is_passed, reason, messages) = filter.check(&request.bot, msg).await;
 
             if !is_passed {
-                let user_mention = get_user_mention(user_id, username, full_name);
+                let user_mention = get_user_mention(user_id, username.as_deref(), full_name.to_string());
 
                 let _ = request
                     .bot
@@ -140,7 +140,7 @@ where
                     .send(
                         MessageMethods::send(msg)
                             .chat_id(ADMIN_CHAT_ID)
-                            .reply_parameters(ReplyParameters::new(msg_id).chat_id(chat_id))
+                            .reply_parameters(ReplyParameters::new().chat_id(chat_id).message_id(msg_id))
                             .reply_markup(antispam_keyboard(chat_id, user_id, Some(msg_id)))
                             .text(msg_text),
                     )

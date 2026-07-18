@@ -66,7 +66,7 @@ pub async fn duel_command_handler(
                 return Ok(());
             }
 
-            let user_mention = get_user_mention(user_id, username, full_name);
+            let user_mention = get_user_mention(user_id, username.as_deref(), full_name.to_string());
 
             let msg_sent = bot.send(
                 MessageMethods::send(&msg).text(
@@ -86,7 +86,7 @@ pub async fn duel_command_handler(
                         user_id,
                         Some(msg_sent.message_id()),
                     ))
-                    .reply_parameters(ReplyParameters::new(msg_sent.message_id()).chat_id(chat_id)),
+                    .reply_parameters(ReplyParameters::new().chat_id(chat_id).message_id(msg_sent.message_id())),
             )
             .await?;
 

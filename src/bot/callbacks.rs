@@ -263,12 +263,12 @@ pub async fn unmute_callback_handler(
 
             let user_mention = get_user_mention(
                 member.id(),
-                member.username().map(|s| s.to_string()),
+                member.username(),
                 member.first_name().parse()?,
             );
             let admin_mention = get_user_mention(
                 call.from.id,
-                call.from.username.map(|s| s.to_string()),
+                call.from.username.as_deref(),
                 call.from.first_name.parse()?,
             );
             let text = format!(
@@ -284,7 +284,7 @@ pub async fn unmute_callback_handler(
             {
                 bot.send(
                     SendMessage::new(chat_id, text)
-                        .reply_parameters(ReplyParameters::new(msg_id))
+                        .reply_parameters(ReplyParameters::new().message_id(msg_id))
                         .link_preview_options(LinkPreviewOptions::new().is_disabled(true))
                         .parse_mode("HTML"),
                 )
@@ -297,7 +297,7 @@ pub async fn unmute_callback_handler(
 
                 bot.send(
                     SendMessage::new(chat_id, text)
-                        .reply_parameters(ReplyParameters::new(message_id))
+                        .reply_parameters(ReplyParameters::new().message_id(message_id))
                         .link_preview_options(LinkPreviewOptions::new().is_disabled(true))
                         .parse_mode("HTML"),
                 )
@@ -353,12 +353,12 @@ pub async fn ban_callback_handler(
 
             let user_mention = get_user_mention(
                 member.id(),
-                member.username().map(|s| s.to_string()),
+                member.username(),
                 member.first_name().parse()?,
             );
             let admin_mention = get_user_mention(
                 call.from.id,
-                call.from.username.map(|s| s.to_string()),
+                call.from.username.as_deref(),
                 call.from.first_name.parse()?,
             );
             let text = format!(
@@ -374,7 +374,7 @@ pub async fn ban_callback_handler(
             {
                 bot.send(
                     SendMessage::new(chat_id, text)
-                        .reply_parameters(ReplyParameters::new(msg_id))
+                        .reply_parameters(ReplyParameters::new().message_id(msg_id))
                         .link_preview_options(LinkPreviewOptions::new().is_disabled(true))
                         .parse_mode("HTML"),
                 )
@@ -387,7 +387,7 @@ pub async fn ban_callback_handler(
 
                 bot.send(
                     SendMessage::new(chat_id, text)
-                        .reply_parameters(ReplyParameters::new(message_id))
+                        .reply_parameters(ReplyParameters::new().message_id(message_id))
                         .link_preview_options(LinkPreviewOptions::new().is_disabled(true))
                         .parse_mode("HTML"),
                 )

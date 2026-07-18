@@ -24,7 +24,7 @@ pub async fn bot_welcome_handler(bot: Bot, event: ChatMemberUpdated) -> anyhow::
     let user = event.new_chat_member.user();
     let user_mention = get_user_mention(
         user.id,
-        user.username.as_ref().map(|s| s.to_string()),
+        user.username.as_deref(),
         user.first_name.parse()?,
     );
     let text_mention = format!(

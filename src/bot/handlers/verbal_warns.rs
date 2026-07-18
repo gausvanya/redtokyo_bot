@@ -30,7 +30,7 @@ pub async fn set_warn_command_handler(
         .await?;
 
     if let Some(user) = user_obj {
-        let user_mention = get_user_mention(user.id, user.username, user.full_name);
+        let user_mention = get_user_mention(user.id, user.username.as_deref(), user.full_name);
 
         let msg_send = bot
             .send(MessageMethods::send(&msg).text(format!(
@@ -79,7 +79,7 @@ pub async fn remove_warn_command_handler(
         .await?;
 
     if let Some(user) = user_obj {
-        let user_mention = get_user_mention(user.id, user.username, user.full_name);
+        let user_mention = get_user_mention(user.id, user.username.as_deref(), user.full_name);
         let warn_repo = VerbalWarnsRepo::new(db);
 
         let user_warn = warn_repo.get(msg.chat().id(), user.id).await?;
@@ -124,13 +124,13 @@ pub async fn list_warns_command_handler(
             .await?;
 
         if let Some(user) = user_obj {
-            (user.id, user.username, user.full_name)
+            (user.id, user.username.map(|s| s.into_boxed_str()), user.full_name.into_boxed_str())
         } else {
             return Ok(());
         }
     };
 
-    let user_mention = get_user_mention(user_id, username, full_name);
+    let user_mention = get_user_mention(user_id, username.as_deref(), full_name.to_string());
 
     let mut message_text = format!(
         "{} Устные предупреждения {}:\n",
