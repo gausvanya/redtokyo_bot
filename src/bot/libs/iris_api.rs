@@ -6,14 +6,14 @@ use std::collections::HashMap;
 
 pub struct IrisAPI {
     api_id: i64,
-    api_token: String,
+    api_token: Box<str>,
     client: Client,
-    base_url: String,
-    api_version: String,
+    base_url: Box<str>,
+    api_version: Box<str>,
 }
 
 impl IrisAPI {
-    pub fn new(api_id: i64, api_token: String) -> Self {
+    pub fn new(api_id: i64, api_token: Box<str>) -> Self {
         let mut headers = HeaderMap::new();
         headers.insert(ACCEPT, HeaderValue::from_static("application/json"));
         headers.insert(USER_AGENT, HeaderValue::from_static("MyApplicationAPI"));
@@ -27,8 +27,8 @@ impl IrisAPI {
             api_id,
             api_token,
             client,
-            base_url: "https://iris-tg.ru/api".to_string(),
-            api_version: "0.5".to_string(),
+            base_url: "https://iris-tg.ru/api".into(),
+            api_version: "0.5".into(),
         }
     }
 

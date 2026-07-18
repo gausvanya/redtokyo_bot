@@ -17,11 +17,11 @@ use sea_orm::DatabaseConnection;
 use std::fmt::Display;
 use telers::enums::UpdateType;
 use telers::event::simple;
-use telers::methods::{DeleteWebhook, SetWebhook};
-use telers::webhooks::axum::{UpdatesHandler, get_updates_router};
+use telers::methods::SetWebhook;
+use telers::webhooks::axum::{get_updates_router, UpdatesHandler};
 use telers::{Bot, Dispatcher, Router};
 use tokio::net::TcpListener;
-use tokio::sync::broadcast::{Receiver, Sender, channel};
+use tokio::sync::broadcast::{channel, Receiver, Sender};
 
 async fn set_webhook(
     bot: Bot,
@@ -52,14 +52,14 @@ fn load_middleware(router: Router) -> Router {
     })
 }
 pub async fn start(cfg: &Config, db: DatabaseConnection) -> anyhow::Result<()> {
-    let bot = Bot::new(&cfg.bot_token);
+    let bot = Bot::new(cfg.bot_token.to_string());
     let mut main_router = register_routers();
 
     main_router = load_middleware(main_router);
 
-    let _ = bot
-        .send(DeleteWebhook::new().drop_pending_updates(true))
-        .await;
+    // let _ = bot
+    //     .send(DeleteWebhook::new().drop_pending_updates(true))
+    //     .await;
 
     let webhook_url = cfg.webhook_url.clone();
     let webhook_path = cfg.webhook_path.clone();
@@ -72,7 +72,7 @@ pub async fn start(cfg: &Config, db: DatabaseConnection) -> anyhow::Result<()> {
                 bot.clone(),
                 webhook_url,
                 webhook_path.clone(),
-                Some(Box::<str>::from(secret_token.as_str())),
+                Some(secret_token.clone()),
             ),
         ))
     });
@@ -84,7 +84,7 @@ pub async fn start(cfg: &Config, db: DatabaseConnection) -> anyhow::Result<()> {
         .build();
 
     let app = AxumRouter::new().route(
-        webhook_path.as_str(),
+        webhook_path.as_ref(),
         get_updates_router(UpdatesHandler::new(bot, dispatcher.clone()).secret_token(secret_token)),
     );
 
