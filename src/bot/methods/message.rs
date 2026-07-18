@@ -15,7 +15,7 @@ impl MessageMethods {
                 is_disabled: Some(true),
                 ..Default::default()
             })
-            .reply_parameters(ReplyParameters::new(msg.message_id()))
+            .reply_parameters(ReplyParameters::new().message_id(msg.message_id()))
     }
     #[inline]
     pub fn edit(msg: &Message) -> EditMessageText {
