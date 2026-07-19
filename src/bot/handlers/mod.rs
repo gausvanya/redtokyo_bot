@@ -43,6 +43,8 @@ pub fn register_routers() -> Router {
                     .filter(CommandFilter::new(regexes::re_reason_scam())),
                 Handler::new(scam_base::file_id_command_handler)
                     .filter(CommandFilter::new(regexes::re_file_id())),
+                Handler::new(duel::minimal_rate_duel_command_handler)
+                    .filter(CommandFilter::new(regexes::re_minimal_rate()))
             ])
         })
         .on_chat_join_request(|observer| {
