@@ -9,6 +9,7 @@ use crate::database::cache::WARN_CACHE;
 use telers::methods::RestrictChatMember;
 use telers::types::{ChatPermissions, Message, ReplyParameters};
 use telers::{Bot, Extension};
+use crate::bot::utils::trade::get_minimum_duel_rate;
 
 pub async fn duel_command_handler(
     bot: Bot,
@@ -29,7 +30,10 @@ pub async fn duel_command_handler(
         return Ok(());
     }
 
-    if (0..45).contains(&amount) {
+    let duel_rate = get_minimum_duel_rate().await?;
+    let min_bet = duel_rate.min_bet as i64;
+
+    if (0..min_bet).contains(&amount) {
         let key = format!("warns_low_bet:{chat_id}:{user_id}");
 
         let warns = WARN_CACHE.get(&key).await.unwrap_or(0) + 1;
@@ -110,5 +114,24 @@ pub async fn duel_command_handler(
             .await?;
         }
     }
+    Ok(())
+}
+
+
+pub async fn minimal_rate_duel_command_handler(
+    bot: Bot,
+    msg: Message,
+) -> anyhow::Result<()> {
+    if msg.chat().id() != DUEL_CHAT_ID {
+        return Ok(());
+    }
+
+    let duel_rate = get_minimum_duel_rate().await?;
+    let message_text = format!(
+        "{} Минимальная ставка игр: {} ирис-голд.\n{} Курс биржи: {:.2}",
+        Emoji::Gold, duel_rate.min_bet, Emoji::Trade, duel_rate.rate
+    );
+
+    bot.send(MessageMethods::send(&msg).text(message_text)).await?;
     Ok(())
 }

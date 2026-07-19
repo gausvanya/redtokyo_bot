@@ -17,6 +17,8 @@ static RE_SET_SCAM: OnceLock<Regex> = OnceLock::new();
 static RE_REMOVE_SCAM: OnceLock<Regex> = OnceLock::new();
 static RE_REASON_SCAM: OnceLock<Regex> = OnceLock::new();
 static RE_FILE_ID: OnceLock<Regex> = OnceLock::new();
+static RE_MINIMAL_RATE: OnceLock<Regex> = OnceLock::new();
+
 
 // CALLBACK REGEX STATIC
 static RE_CALLBACK_CAPTCHA: OnceLock<Regex> = OnceLock::new();
@@ -136,6 +138,13 @@ pub fn re_reason_scam() -> &'static Regex {
 pub fn re_file_id() -> &'static Regex {
     RE_FILE_ID
         .get_or_init(|| Regex::new(&format!(r"(?i)^{PREFIX}(?P<command>файл ид)(?:$|\n)")).unwrap())
+}
+
+#[inline]
+pub fn re_minimal_rate() -> &'static Regex {
+    RE_MINIMAL_RATE.get_or_init(|| {
+        Regex::new(&format!(r"(?i)^{PREFIX}(?P<command>мин ставка)(?:$|\n)")).unwrap()
+    })
 }
 
 // CALLBACK REGEX
