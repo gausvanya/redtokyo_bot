@@ -21,6 +21,8 @@ pub enum Emoji {
     #[strum(props(id = "5458789419014182183", char = "️👤"))] Human,
     #[strum(props(id = "5436276364384677952", char = "➡️"))] ArrowRight,
     #[strum(props(id = "5334544901428229844", char = "ℹ️"))] Information,
+    #[strum(props(id = "5837028497075213564", char = "💲"))] Gold,
+    #[strum(props(id = "5350713563512052787", char = "📉"))] Trade,
 
 
 }
