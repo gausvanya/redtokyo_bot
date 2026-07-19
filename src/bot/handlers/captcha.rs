@@ -4,7 +4,6 @@ use crate::bot::libs::iris_api::IrisAPI;
 use crate::bot::utils::chat::GARANT_CHAT_ID;
 use crate::bot::utils::datetime::get_current_datetime;
 use crate::bot::utils::user::get_user_mention;
-use crate::config::get_config;
 use crate::database::repo::captcha_repo::CaptchaRepo;
 use chrono::{Duration, TimeZone, Utc};
 use chrono_tz::Europe::Moscow;
@@ -88,9 +87,7 @@ pub async fn captcha_chat_join_request_handler(
 
             captcha_repo.insert(chat_id, user_id).await?;
         } else {
-            let cfg = get_config();
-
-            let iris_api = IrisAPI::new(cfg.iris_api_id, cfg.iris_api_token.clone());
+            let iris_api = IrisAPI::new();
             let user_reg = iris_api.get_user_reg(user_id).await?;
 
             if user_reg.get("error").is_some() {

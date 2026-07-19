@@ -8,7 +8,6 @@ use crate::bot::filters::command::ParsedCommand;
 use crate::bot::libs::iris_api::IrisAPI;
 use crate::bot::utils::chat::ADMIN_IDS;
 use crate::bot::utils::user::get_user_mention;
-use crate::config::get_config;
 use crate::database::cache::SUMMON_CACHE;
 use crate::database::repo::captcha_repo::CaptchaRepo;
 use crate::database::repo::garant_repo::GarantRepo;
@@ -163,8 +162,7 @@ pub async fn repeat_reg_callback_handler(
     let chat_id = args.require("chat_id").parse::<i64>().unwrap_or(0);
     let user_id = args.require("user_id").parse::<i64>().unwrap_or(0);
 
-    let cfg = get_config();
-    let iris_api = IrisAPI::new(cfg.iris_api_id, cfg.iris_api_token.clone());
+    let iris_api = IrisAPI::new();
     let user_reg = iris_api.get_user_reg(user_id).await.ok();
 
     if let Some(reg_data) = user_reg {
