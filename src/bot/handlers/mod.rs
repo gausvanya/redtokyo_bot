@@ -4,7 +4,7 @@ use crate::bot::filters::command::CommandFilter;
 use crate::bot::filters::regexes;
 use telers::enums::ChatMemberType;
 use telers::filters::ChatMemberUpdated;
-use telers::{event::telegram::Handler, Filter, Router};
+use telers::{event::telegram::Handler, Router};
 
 mod bot_welcome;
 mod captcha;
@@ -58,11 +58,7 @@ pub fn register_routers() -> Router {
         .on_chat_member(|observer| {
             observer.register(Handler::new(captcha::chat_member_updated_handler)
                 .filter(
-                    ChatMemberUpdated::new(ChatMemberType::Member)
-                        .old(ChatMemberType::Left)
-                        .or(ChatMemberUpdated::new(ChatMemberType::Member)
-                            .old(ChatMemberType::Kicked))
-                        .or(ChatMemberUpdated::new(ChatMemberType::Member))
+                    ChatMemberUpdated::new(ChatMemberType::Member).old(ChatMemberType::Left)
                 )
             )
         })
