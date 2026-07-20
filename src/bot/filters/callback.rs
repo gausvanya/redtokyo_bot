@@ -44,7 +44,7 @@ where
                 None => return Ok(false),
             };
 
-            let mut groups: SmallVec<[(&'static str, Box<str>); 4]> = SmallVec::new();
+            let mut groups: SmallVec<(&'static str, Box<str>), 4> = SmallVec::new();
             for name in regex.capture_names().flatten() {
                 if let Some(m) = caps.name(name) {
                     groups.push((name, m.as_str().to_owned().into()));

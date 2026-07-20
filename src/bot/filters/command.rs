@@ -6,7 +6,7 @@ use tokio::time::Instant;
 
 #[derive(Debug, Clone)]
 pub struct ParsedCommand {
-    pub(crate) groups: SmallVec<[(&'static str, Box<str>); 4]>,
+    pub(crate) groups: SmallVec<(&'static str, Box<str>), 4>,
 }
 
 impl ParsedCommand {
@@ -70,7 +70,7 @@ where
                 }
             };
 
-            let mut groups: SmallVec<[(&'static str, Box<str>); 4]> = SmallVec::new();
+            let mut groups: SmallVec<(&'static str, Box<str>), 4> = SmallVec::new();
 
             for name in regex.capture_names().flatten() {
                 if let Some(m) = caps.name(name) {
