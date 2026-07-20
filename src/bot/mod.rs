@@ -34,6 +34,7 @@ async fn set_webhook(
             .allowed_updates(vec![
                 UpdateType::Message,
                 UpdateType::CallbackQuery,
+                UpdateType::ChatMember,
                 UpdateType::MyChatMember,
                 UpdateType::ChatJoinRequest,
             ])
