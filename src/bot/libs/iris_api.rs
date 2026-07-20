@@ -15,6 +15,28 @@ pub struct IrisAPI {
     api_version: Box<str>,
 }
 
+#[derive(Debug, Deserialize)]
+struct ApiErrorDetails {
+    code: i32,
+    description: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct ApiErrorResponse {
+    error: ApiErrorDetails,
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum IrisApiError {
+    #[error("сетевая ошибка: {0}")]
+    Request(#[from] reqwest::Error),
+
+    #[error("ошибка API (код {code}): {description}")]
+    Api { code: i32, description: String },
+
+    #[error("неожиданный HTTP статус {0}: {1}")]
+    BadStatus(reqwest::StatusCode, String),
+}
 
 #[derive(Debug, Deserialize)]
 struct OrderBookEntry {
@@ -90,29 +112,44 @@ impl IrisAPI {
         &self,
         method: &str,
         params: HashMap<String, String>,
-    ) -> Result<T, reqwest::Error> {
+    ) -> Result<T, IrisApiError> {
         let url = format!(
             "{}/{}_{}/v{}/{}",
             self.base_url, self.api_id, self.api_token, self.api_version, method
         );
 
-        self.client
+        let response = self.client
             .get(url)
             .query(&params)
             .send()
-            .await?
-            .json::<T>()
-            .await
+            .await?;
+
+        let status = response.status();
+
+        if status.is_success() {
+            response.json::<T>().await.map_err(IrisApiError::Request)
+        } else {
+            let body_text = response.text().await.unwrap_or_default();
+
+            if let Ok(err_payload) = serde_json::from_str::<ApiErrorResponse>(&body_text) {
+                Err(IrisApiError::Api {
+                    code: err_payload.error.code,
+                    description: err_payload.error.description,
+                })
+            } else {
+                Err(IrisApiError::BadStatus(status, body_text))
+            }
+        }
     }
 
-    pub async fn get_user_reg(&self, user_id: i64) -> Result<serde_json::Value, reqwest::Error> {
+    pub async fn get_user_reg(&self, user_id: i64) -> Result<serde_json::Value, IrisApiError> {
         let mut params = HashMap::new();
         params.insert("user_id".to_string(), user_id.to_string());
 
         self.send_request("user_info/reg", params).await
     }
 
-    pub async fn get_order_book(&self) -> Result<OrderBookResponse, reqwest::Error> {
+    pub async fn get_order_book(&self) -> Result<OrderBookResponse, IrisApiError> {
         let params = HashMap::new();
         self.send_request("trade/orderbook", params).await
     }
