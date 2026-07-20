@@ -1,7 +1,7 @@
 use crate::bot::enums::tg_emoji::Emoji;
 use crate::bot::keyboards::{captcha_keyboard, repeat_reg_keyboard};
 use crate::bot::libs::iris_api::IrisAPI;
-use crate::bot::utils::chat::GARANT_CHAT_ID;
+use crate::bot::utils::chat::{ADMIN_CHAT_ID, GARANT_CHAT_ID};
 use crate::bot::utils::datetime::get_current_datetime;
 use crate::bot::utils::user::get_user_mention;
 use crate::database::repo::captcha_repo::CaptchaRepo;
@@ -11,7 +11,7 @@ use sea_orm::DatabaseConnection;
 use telers::methods::{
     ApproveChatJoinRequest, BanChatMember, DeclineChatJoinRequest, GetUserGifts, SendMessage,
 };
-use telers::types::{ChatJoinRequest, OwnedGift};
+use telers::types::{ChatJoinRequest, ChatMemberUpdated, LinkPreviewOptions, OwnedGift};
 use telers::{Bot, Extension};
 
 pub async fn captcha_chat_join_request_handler(
@@ -73,6 +73,7 @@ pub async fn captcha_chat_join_request_handler(
                 OwnedGift::Unique(_) => {
                     nft_count += 1;
                 }
+                OwnedGift::Unknown(_) => return Ok(())
             }
         }
 
@@ -155,5 +156,34 @@ pub async fn captcha_chat_join_request_handler(
         .await?;
     }
 
+    Ok(())
+}
+
+
+pub async fn chat_member_updated_handler(
+    bot: Bot,
+    event: ChatMemberUpdated,
+    Extension(db): Extension<DatabaseConnection>,
+) -> anyhow::Result<()> {
+    let user = event.new_chat_member.user();
+    let chat_id = event.chat.id();
+    let captcha_repo = CaptchaRepo::new(db);
+
+    let is_captcha = captcha_repo.get(chat_id, user.id).await?;
+
+    if is_captcha.is_none() {
+        let until_date = (Utc::now() + Duration::minutes(5)).timestamp();
+        let user_mention = get_user_mention(user.id, user.username.as_deref(), user.first_name.to_string());
+
+        bot.send(BanChatMember::new(chat_id, user.id).until_date(until_date)).await?;
+
+        bot.send(SendMessage::new(ADMIN_CHAT_ID, format!(
+            "{} {} зашел в чат в обход системы проверок, исключаю...\n\
+            {} Чат: {}", Emoji::Warning, user_mention, Emoji::Balloon, event.chat.title().unwrap_or_default()
+        ))
+            .parse_mode("HTML")
+            .link_preview_options(LinkPreviewOptions::new().is_disabled(true))
+        ).await?;
+    }
     Ok(())
 }

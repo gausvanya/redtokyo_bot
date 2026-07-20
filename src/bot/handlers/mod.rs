@@ -2,7 +2,9 @@ use crate::bot::callbacks;
 use crate::bot::filters::callback::CallbackFilter;
 use crate::bot::filters::command::CommandFilter;
 use crate::bot::filters::regexes;
-use telers::{Router, event::telegram::Handler};
+use telers::enums::ChatMemberType;
+use telers::filters::ChatMemberUpdated;
+use telers::{event::telegram::Handler, Filter, Router};
 
 mod bot_welcome;
 mod captcha;
@@ -52,6 +54,17 @@ pub fn register_routers() -> Router {
         })
         .on_my_chat_member(|observer| {
             observer.register(Handler::new(bot_welcome::bot_welcome_handler))
+        })
+        .on_chat_member(|observer| {
+            observer.register(Handler::new(captcha::chat_member_updated_handler)
+                .filter(
+                    ChatMemberUpdated::new(ChatMemberType::Member)
+                        .old(ChatMemberType::Left)
+                        .or(ChatMemberUpdated::new(ChatMemberType::Member)
+                            .old(ChatMemberType::Kicked))
+                        .or(ChatMemberUpdated::new(ChatMemberType::Member))
+                )
+            )
         })
         .on_callback_query(|observer| {
             observer.registers([
