@@ -39,7 +39,7 @@ pub enum IrisApiError {
     BadStatus(reqwest::StatusCode, String),
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 struct OrderBookEntry {
     #[allow(dead_code)]
     volume: f64,
