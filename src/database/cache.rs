@@ -38,3 +38,10 @@ pub static RAID_CACHE: LazyLock<Cache<String, Vec<i64>>> = LazyLock::new(|| {
         .time_to_live(Duration::from_secs(15))
         .build()
 });
+
+pub static ORDER_BOOK_CACHE: LazyLock<Cache<&'static str, OrderBookResponse>> = LazyLock::new(|| {
+    Cache::builder()
+        .time_to_live(Duration::from_secs(1800))
+        .max_capacity(1)
+        .build()
+});
