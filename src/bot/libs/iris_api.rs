@@ -46,7 +46,7 @@ struct OrderBookEntry {
     price: f64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 struct OrderBookResult {
     buy: Vec<OrderBookEntry>,
     sell: Vec<OrderBookEntry>,
