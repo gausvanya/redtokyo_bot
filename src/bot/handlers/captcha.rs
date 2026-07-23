@@ -167,6 +167,11 @@ pub async fn chat_member_updated_handler(
 ) -> anyhow::Result<()> {
     let user = event.new_chat_member.user();
     let chat_id = event.chat.id();
+
+    if chat_id == -1002635887529 {
+        return Ok(())
+    }
+
     let captcha_repo = CaptchaRepo::new(db);
 
     let is_captcha = captcha_repo.get(chat_id, user.id).await?;
