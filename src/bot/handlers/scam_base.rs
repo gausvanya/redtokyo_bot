@@ -271,7 +271,7 @@ pub async fn remove_scam_command_handler(
                 } else {
                     let mut active_model: scam_base::ActiveModel = scam.into_active_model();
                     active_model.status = Set(false);
-                    let _ = scam_base_repo.update(active_model).await;
+                    scam_base_repo.update(active_model).await?;
                     format!(
                         "{} Пользователь {} удален из скам базы проекта 'RedTokyo'",
                         Emoji::Human,
