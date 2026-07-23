@@ -177,6 +177,12 @@ pub async fn chat_member_updated_handler(
     let is_captcha = captcha_repo.get(chat_id, user.id).await?;
 
     if is_captcha.is_none() {
+        let chat = bot.send(GetChat::new(chat_id)).await?;
+
+        if !chat.join_by_request().unwrap_or(false) {
+            return Ok(())
+        }
+
         let until_date = (Utc::now() + Duration::minutes(5)).timestamp();
         let user_mention = get_user_mention(user.id, user.username.as_deref(), user.first_name.to_string());
 
