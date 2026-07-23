@@ -19,6 +19,11 @@ pub async fn captcha_chat_join_request_handler(
 ) -> anyhow::Result<()> {
     let chat_id = event.chat.id();
     let user_id = event.from.id;
+
+    if chat_id == -1002635887529 {
+        return Ok(())
+    }
+
     let captcha_repo = CaptchaRepo::new(db.clone());
 
     let captcha_user = captcha_repo.get(chat_id, user_id).await?;
