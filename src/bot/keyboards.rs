@@ -57,6 +57,7 @@ pub fn captcha_keyboard(chat_id: i64, user_id: i64) -> InlineKeyboardMarkup {
 pub fn duel_unmute_keyboard(
     chat_id: i64,
     user_id: i64,
+    min_bet: i64,
     message_id: Option<i64>,
 ) -> InlineKeyboardMarkup {
     InlineKeyboardMarkup::new(vec![
