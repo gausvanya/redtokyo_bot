@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::{Arc, LazyLock};
 use std::time::Duration;
 use tokio::sync::Mutex;
+use crate::bot::libs::iris_api::OrderBookResponse;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct SummonPayload {
