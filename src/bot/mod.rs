@@ -3,7 +3,7 @@ pub mod enums;
 mod filters;
 mod handlers;
 mod keyboards;
-mod libs;
+pub mod libs;
 mod methods;
 pub mod middlewares;
 mod task;
