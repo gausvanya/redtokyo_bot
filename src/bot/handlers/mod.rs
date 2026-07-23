@@ -13,6 +13,7 @@ mod garant;
 mod ping;
 mod scam_base;
 mod verbal_warns;
+mod db_update;
 
 #[inline]
 pub fn register_routers() -> Router {
