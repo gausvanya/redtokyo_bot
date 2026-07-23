@@ -151,6 +151,12 @@ impl IrisAPI {
     }
 
     pub async fn get_order_book(&self) -> Result<OrderBookResponse, IrisApiError> {
+        const CACHE_KEY: &str = "orderbook";
+
+        if let Some(cached_response) = ORDER_BOOK_CACHE.get(CACHE_KEY).await {
+            return Ok(cached_response);
+        }
+
         let params = HashMap::new();
         let response: OrderBookResponse = self.send_request("trade/orderbook", params).await?;
 
