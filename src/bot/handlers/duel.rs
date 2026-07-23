@@ -88,6 +88,7 @@ pub async fn duel_command_handler(
                     .reply_markup(duel_unmute_keyboard(
                         msg.chat().id(),
                         user_id,
+                        min_bet,
                         Some(msg_sent.message_id()),
                     ))
                     .reply_parameters(ReplyParameters::new().chat_id(chat_id).message_id(msg_sent.message_id())),
