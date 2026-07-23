@@ -74,8 +74,8 @@ pub async fn duel_command_handler(
 
             let msg_sent = bot.send(
                 MessageMethods::send(&msg).text(
-                    format!("🤐 {user_mention}\nВы получили мут на 5 минут за повторную попытку игры на сумму менее 50 голд.")
-                ).reply_markup(duel_unmute_keyboard(msg.chat().id(), user_id, None))
+                    format!("🤐 {user_mention}\nВы получили мут на 5 минут за повторную попытку игры на сумму менее {min_bet} голд.")
+                ).reply_markup(duel_unmute_keyboard(msg.chat().id(), user_id, min_bet, None))
             ).await?;
 
             bot.send(
