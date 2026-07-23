@@ -74,7 +74,7 @@ pub fn duel_unmute_keyboard(
         ],
         vec![
             InlineKeyboardButton::new("Скопировать предупреждение").copy_text(CopyTextButton::new(
-                format!("варн @{user_id}\nИгры от 50 голд."),
+                format!("варн @{user_id}\nИгры от {min_bet} голд."),
             )),
         ],
     ])
