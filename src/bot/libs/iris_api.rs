@@ -52,7 +52,7 @@ struct OrderBookResult {
     sell: Vec<OrderBookEntry>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct OrderBookResponse {
     result: OrderBookResult,
 }
