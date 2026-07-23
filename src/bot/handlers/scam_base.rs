@@ -246,7 +246,23 @@ pub async fn remove_scam_command_handler(
         let msg_text = match scam_base {
             Some((scam, _)) => {
                 if command.to_lowercase().contains("ошибка") {
-                    let _ = scam_base_repo.delete(scam).await;
+                    if !GL_ADMINS.contains(&admin.0) {
+                        bot.send(MessageMethods::send(&msg)
+                            .text(format!(
+                                "{} У вас недостаточно прав для выполнения данной команды.",
+                                Emoji::Exclamation)
+                            )
+                        ).await?;
+
+                        return Ok(())
+                    }
+
+                    let channel_chat_id = scam.channel_chat_id;
+                    let channel_message_id = scam.channel_message_id;
+
+                    let _ = bot.send(DeleteMessage::new(channel_chat_id, channel_message_id)).await;
+                    scam_base_repo.delete(scam).await?;
+
                     format!(
                         "{} Пользователь {} удален из скам базы проекта 'RedTokyo' без пометки о вносе",
                         Emoji::Human,
