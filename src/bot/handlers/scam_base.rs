@@ -321,8 +321,8 @@ pub async fn reason_scam_command_handler(
                 };
                 let scam_url = format!(
                     "https://t.me/c/{}/{}",
-                    scam_base.chat_id.to_string().replace("-100", ""),
-                    scam_base.message_id
+                    scam_base.channel_chat_id.to_string().replace("-100", ""),
+                    scam_base.channel_message_id
                 );
                 let photo_id = if scam_base.status {
                     RED_STATUS
