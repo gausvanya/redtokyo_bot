@@ -42,7 +42,13 @@ impl GetUserInfo {
         }
 
         if let Some(user_val) = &self.user {
-            let user_obj = if let Ok(user_id) = user_val.parse::<i64>() {
+            let parsed_id = user_val.parse::<i64>().ok().or_else(|| {
+                user_val
+                    .strip_prefix('_')
+                    .and_then(|s| format!("-{s}").parse::<i64>().ok())
+            });
+
+            let user_obj = if let Some(user_id) = parsed_id {
                 self.user_repo.get(UserIdentity::Id(user_id)).await?
             } else {
                 self.user_repo
