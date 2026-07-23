@@ -17,7 +17,7 @@ incremental = false
 too_many_arguments = "allow"
 
 [dependencies]
-telers = { version = "1.0.0-beta.7", features = ["webhooks-axum", "signal"] }
+telers = { version = "1.0.0-beta.8", features = ["webhooks-axum", "signal"] }
 tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros"] }
 
 sea-orm = { version = "2.0.0", features = ["sqlx-postgres", "runtime-tokio-rustls"] }
