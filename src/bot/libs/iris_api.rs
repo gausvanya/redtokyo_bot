@@ -6,6 +6,7 @@ use reqwest::{
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use std::collections::HashMap;
+use crate::database::cache::ORDER_BOOK_CACHE;
 
 pub struct IrisAPI {
     api_id: i64,
