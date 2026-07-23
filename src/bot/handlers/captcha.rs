@@ -8,9 +8,7 @@ use crate::database::repo::captcha_repo::CaptchaRepo;
 use chrono::{Duration, TimeZone, Utc};
 use chrono_tz::Europe::Moscow;
 use sea_orm::DatabaseConnection;
-use telers::methods::{
-    ApproveChatJoinRequest, BanChatMember, DeclineChatJoinRequest, GetUserGifts, SendMessage,
-};
+use telers::methods::{ApproveChatJoinRequest, BanChatMember, DeclineChatJoinRequest, GetChat, GetUserGifts, SendMessage};
 use telers::types::{ChatJoinRequest, ChatMemberUpdated, LinkPreviewOptions, OwnedGift};
 use telers::{Bot, Extension};
 
