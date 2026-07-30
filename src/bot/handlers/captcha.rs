@@ -1,6 +1,6 @@
 use crate::bot::enums::tg_emoji::Emoji;
 use crate::bot::keyboards::{captcha_keyboard, repeat_reg_keyboard};
-use crate::bot::libs::iris_api::IrisAPI;
+use crate::bot::libs::iris_api::{IrisAPI, IrisApiError};
 use crate::bot::utils::chat::{ADMIN_CHAT_ID, GARANT_CHAT_ID};
 use crate::bot::utils::datetime::get_current_datetime;
 use crate::bot::utils::user::get_user_mention;
@@ -92,46 +92,62 @@ pub async fn captcha_chat_join_request_handler(
             captcha_repo.insert(chat_id, user_id).await?;
         } else {
             let iris_api = IrisAPI::new();
-            let user_reg = iris_api.get_user_reg(user_id).await?;
 
-            if user_reg.get("error").is_some() {
-                bot.send(SendMessage::new(user_id, format!(
-                    "{} Бот запрашивает разрешение, на получение информации о дате регистрации в Iris: \
+            match iris_api.get_user_reg(user_id).await {
+                Ok(user_reg) => {
+                    let reg_timestamp = user_reg["result"].as_i64().unwrap_or(0);
+                    let now_msk = Utc::now().with_timezone(&Moscow);
+                    let year_ago_msk = now_msk - Duration::days(365);
+
+                    let reg_timestamp_seconds = reg_timestamp / 1000;
+                    let reg_date_msk = Moscow
+                        .timestamp_opt(reg_timestamp_seconds, 0)
+                        .single()
+                        .expect("Invalid timestamp");
+
+                    if reg_date_msk < year_ago_msk {
+                        if bot
+                            .send(ApproveChatJoinRequest::new(chat_id, user_id))
+                            .await
+                            .is_err()
+                        {
+                            return Ok(());
+                        }
+                        let _ = bot.send(SendMessage::new(user_id, "✅ Заявка в чат принята!")).await;
+                        captcha_repo.insert(chat_id, user_id).await?;
+                    } else {
+                        if bot
+                            .send(DeclineChatJoinRequest::new(chat_id, user_id))
+                            .await
+                            .is_err()
+                        {
+                            return Ok(());
+                        }
+                        let _ = bot.send(SendMessage::new(
+                            user_id,
+                            "❌ Заявка в чат отклонена, вы не проходите по минимальной дате регистрации в Iris",
+                        )).await;
+                    }
+                }
+                Err(IrisApiError::Api { code: 403, .. }) => {
+                    let _ = bot
+                        .send(
+                            SendMessage::new(
+                                user_id,
+                                format!(
+                                    "{} Бот запрашивает разрешение на получение информации о дате регистрации в Iris: \
                         <a href='https://t.me/iris_bs_bot?start=request_rights_7635712622_reg'>перейти</a>",
-                    Emoji::Information
-                )).parse_mode("HTML").reply_markup(repeat_reg_keyboard(chat_id, user_id))).await?;
-            } else {
-                let reg_timestamp = user_reg["result"].as_i64().unwrap_or(0);
-                let now_msk = Utc::now().with_timezone(&Moscow);
-
-                let year_ago_msk = now_msk - Duration::days(365);
-
-                let reg_timestamp_seconds = reg_timestamp / 1000;
-                let reg_date_msk = Moscow
-                    .timestamp_opt(reg_timestamp_seconds, 0)
-                    .single()
-                    .expect("Invalid timestamp");
-
-                if reg_date_msk < year_ago_msk {
-                    if bot
-                        .send(ApproveChatJoinRequest::new(chat_id, user_id))
-                        .await
-                        .is_err()
-                    {
-                        return Ok(());
-                    }
-                    bot.send(SendMessage::new(user_id, "✅ Заявка в чат принята!"))
-                        .await?;
-                    captcha_repo.insert(chat_id, user_id).await?;
-                } else {
-                    if bot
-                        .send(DeclineChatJoinRequest::new(chat_id, user_id))
-                        .await
-                        .is_err()
-                    {
-                        return Ok(());
-                    }
-                    bot.send(SendMessage::new(user_id, "❌ Заявка в чат отклонена, вы не проходите по минимальной дате регистрации в Iris")).await?;
+                                    Emoji::Information
+                                ),
+                            )
+                                .parse_mode("HTML")
+                                .reply_markup(repeat_reg_keyboard(chat_id, user_id)),
+                        )
+                        .await;
+                }
+                Err(err) => {
+                    tracing::error!("Ошибка при запросе к Iris API: {:?}", err);
+                    return Err(err.into());
                 }
             }
         }
