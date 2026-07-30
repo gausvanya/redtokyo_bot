@@ -3,10 +3,10 @@ use crate::bot::utils::chat::{ALLOWED_BOT_IDS, ALLOWED_URLS};
 use crate::bot::utils::user::get_user_info;
 use crate::database::cache::RAID_CACHE;
 use regex::Regex;
+use telers::Bot;
 use telers::client::Session;
 use telers::methods::GetChatMember;
 use telers::types::{ChatMember, Message};
-use telers::Bot;
 
 pub struct AntispamFilter;
 
@@ -19,7 +19,9 @@ impl AntispamFilter {
         }
 
         let text = msg.text().or(msg.caption()).unwrap_or("");
-        let re = RE_INVITE.get_or_init(|| Regex::new(r"t\.me/\+\w+").unwrap());
+        let re = RE_INVITE.get_or_init(|| {
+            Regex::new(r"(?:t\.me|telegram\.(?:org|me|dog))/(?:\+\w+|gram_piarbot\?start=check_)").unwrap()
+        });
 
         for mat in re.find_iter(text) {
             if !ALLOWED_URLS.contains(&mat.as_str()) {
@@ -81,8 +83,9 @@ impl AntispamFilter {
     where
         C: Session + Send + Sync + 'static,
     {
-        if msg.chat().id() == -1002635887529 { // пиар чат ид
-            return (true, "null", Vec::new())
+        if msg.chat().id() == -1002635887529 {
+            // пиар чат ид
+            return (true, "null", Vec::new());
         }
 
         if self.is_spam_link(msg) {
