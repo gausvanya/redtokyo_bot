@@ -1,13 +1,13 @@
 use crate::bot::enums::tg_emoji::Emoji;
+use crate::bot::enums::user_type::UserIdentity;
 use crate::bot::filters::command::ParsedCommand;
 use crate::bot::methods::message::MessageMethods;
-use crate::bot::utils::chat::GL_ADMINS;
+use crate::bot::utils::chat::ADMIN_IDS;
 use crate::bot::utils::user::get_user_info;
 use crate::database::repo::user_repo::UserRepo;
 use sea_orm::DatabaseConnection;
 use telers::types::Message;
 use telers::{Bot, Extension};
-use crate::bot::enums::user_type::UserIdentity;
 
 fn parse_user_id(s: &str) -> Option<i64> {
     if let Ok(id) = s.parse::<i64>() {
@@ -27,7 +27,7 @@ pub async fn db_update_command_handler(
 ) -> anyhow::Result<()> {
     let admin_id = get_user_info(&msg).0;
 
-    if !GL_ADMINS.contains(&admin_id) {
+    if !ADMIN_IDS.contains(&admin_id) {
         return Ok(());
     }
 
@@ -47,13 +47,23 @@ pub async fn db_update_command_handler(
     let user_repo = UserRepo::new(db);
     let user_obj = user_repo.get(UserIdentity::Id(target_id)).await?;
 
-    if let Some(_) = user_obj {
+    if user_obj.is_some() {
         let message_text = format!("{} Данный ИД уже известен боту", Emoji::Information);
 
         bot.send(MessageMethods::send(&msg).text(message_text))
             .await?;
     } else {
-        user_repo.insert(target_id, None, target_id.to_string()).await?;
+        user_repo
+            .insert(target_id, None, target_id.to_string())
+            .await?;
+
+        let message_text = format!(
+            "{} Данные пользователя обновлены в базе",
+            Emoji::Information
+        );
+
+        bot.send(MessageMethods::send(&msg).text(message_text))
+            .await?;
     }
 
     Ok(())
