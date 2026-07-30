@@ -5,7 +5,8 @@ use sea_orm::DatabaseConnection;
 
 use crate::bot::enums::tg_emoji::Emoji;
 use crate::bot::filters::command::ParsedCommand;
-use crate::bot::libs::iris_api::IrisAPI;
+use crate::bot::libs::iris_api::{IrisAPI, IrisApiError};
+use crate::bot::methods::message::MessageMethods;
 use crate::bot::utils::chat::ADMIN_IDS;
 use crate::bot::utils::user::get_user_mention;
 use crate::database::cache::SUMMON_CACHE;
@@ -16,11 +17,8 @@ use telers::methods::{
     AnswerCallbackQuery, ApproveChatJoinRequest, BanChatMember, DeclineChatJoinRequest,
     DeleteMessages, EditMessageReplyMarkup, GetChatMember, RestrictChatMember
 };
-use telers::types::{
-    CallbackQuery, ChatMember, ChatPermissions, ReplyParameters,
-};
+use telers::types::{CallbackQuery, ChatMember, ChatPermissions, ReplyParameters};
 use telers::{Bot, Extension};
-use crate::bot::methods::message::MessageMethods;
 
 pub async fn captcha_callback_handler(
     bot: Bot,
@@ -37,25 +35,30 @@ pub async fn captcha_callback_handler(
         if code == "3" {
             let captcha_repo = CaptchaRepo::new(db.clone());
             let _ = captcha_repo.insert(chat_id, user_id).await;
-            
+
             bot.send(
                 MessageMethods::edit(&message)
                     .text("✅ Заявка в чат принята!")
-                    .message_id(message.message_id())
-            ).await?;
-            bot.send(ApproveChatJoinRequest::new(chat_id, user_id)).await?;
+                    .message_id(message.message_id()),
+            )
+            .await?;
+            bot.send(ApproveChatJoinRequest::new(chat_id, user_id))
+                .await?;
         } else {
             bot.send(
                 MessageMethods::edit(&message)
                     .text("❌ Заявка в чат отклонена")
-                    .message_id(message.message_id())
-            ).await?;
+                    .message_id(message.message_id()),
+            )
+            .await?;
 
-            bot.send(DeclineChatJoinRequest::new(chat_id, user_id)).await?;
+            bot.send(DeclineChatJoinRequest::new(chat_id, user_id))
+                .await?;
             bot.send(
                 BanChatMember::new(chat_id, user_id)
                     .until_date(get_current_datetime().and_utc().timestamp() + 300),
-            ).await?;
+            )
+            .await?;
         }
         Ok(())
     }
@@ -80,13 +83,15 @@ pub async fn garant_call_callback_handler(
                     AnswerCallbackQuery::new(call.id.clone())
                         .text("❌ Данные созыва устарели или кнопка больше не активна.")
                         .show_alert(true),
-                ).await?;
+                )
+                .await?;
 
                 bot.send(
                     EditMessageReplyMarkup::new()
                         .chat_id(chat_id)
                         .message_id(message.message_id()),
-                ).await?;
+                )
+                .await?;
 
                 return Ok(());
             }
@@ -109,7 +114,8 @@ pub async fn garant_call_callback_handler(
             return Ok(());
         }
 
-        bot.send(DeleteMessages::new(chat_id, cached_data.msg_ids.clone())).await?;
+        bot.send(DeleteMessages::new(chat_id, cached_data.msg_ids.clone()))
+            .await?;
         Ok(())
     }
 }
@@ -126,18 +132,10 @@ pub async fn repeat_reg_callback_handler(
         let message = call.message.unwrap_unchecked();
 
         let iris_api = IrisAPI::new();
-        let user_reg = iris_api.get_user_reg(user_id).await.ok();
 
-        if let Some(reg_data) = user_reg {
-            if reg_data.get("error").is_some() {
-                bot.send(
-                    AnswerCallbackQuery::new(call.id)
-                        .text("ℹ️ Вы не выдали боту права на просмотр даты регистрации в Iris")
-                        .show_alert(true),
-                )
-                    .await?;
-            } else {
-                let reg_timestamp = reg_data["result"].as_i64().unwrap_or(0);
+        match iris_api.get_user_reg(user_id).await {
+            Ok(user_reg) => {
+                let reg_timestamp = user_reg["result"].as_i64().unwrap_or(0);
                 let reg_timestamp_seconds = reg_timestamp / 1000;
 
                 let now_msk = Utc::now().with_timezone(&Moscow);
@@ -148,7 +146,8 @@ pub async fn repeat_reg_callback_handler(
                     .unwrap_unchecked();
 
                 if reg_date_msk < year_ago_msk {
-                    bot.send(ApproveChatJoinRequest::new(chat_id, user_id)).await?;
+                    bot.send(ApproveChatJoinRequest::new(chat_id, user_id))
+                        .await?;
 
                     let captcha_repo = CaptchaRepo::new(db);
                     captcha_repo.insert(chat_id, user_id).await?;
@@ -156,10 +155,12 @@ pub async fn repeat_reg_callback_handler(
                     bot.send(
                         MessageMethods::edit(&message)
                             .text("✅ Заявка в чат принята!")
-                            .message_id(message.message_id())
-                    ).await?;
+                            .message_id(message.message_id()),
+                    )
+                    .await?;
                 } else {
-                    bot.send(DeclineChatJoinRequest::new(chat_id, user_id)).await?;
+                    bot.send(DeclineChatJoinRequest::new(chat_id, user_id))
+                        .await?;
 
                     bot.send(
                         MessageMethods::edit(&message)
@@ -167,6 +168,18 @@ pub async fn repeat_reg_callback_handler(
                             .message_id(message.message_id())
                     ).await?;
                 }
+            }
+            Err(IrisApiError::Api { code: 403, .. }) => {
+                bot.send(
+                    AnswerCallbackQuery::new(call.id)
+                        .text("ℹ️ Вы не выдали боту права на просмотр даты регистрации в Iris")
+                        .show_alert(true),
+                )
+                .await?;
+            }
+            Err(err) => {
+                tracing::error!("Ошибка при запросе к Iris API: {:?}", err);
+                return Err(err.into());
             }
         }
         Ok(())
@@ -190,7 +203,7 @@ pub async fn unmute_callback_handler(
                     .text("У вас недостаточно прав")
                     .show_alert(true),
             )
-                .await?;
+            .await?;
             return Ok(());
         }
 
@@ -217,13 +230,11 @@ pub async fn unmute_callback_handler(
                     can_manage_topics: Some(true),
                 };
 
-                bot.send(RestrictChatMember::new(chat_id, user_id, permissions)).await?;
+                bot.send(RestrictChatMember::new(chat_id, user_id, permissions))
+                    .await?;
 
-                let user_mention = get_user_mention(
-                    member.id(),
-                    member.username(),
-                    member.first_name().parse()?,
-                );
+                let user_mention =
+                    get_user_mention(member.id(), member.username(), member.first_name().parse()?);
                 let admin_mention = get_user_mention(
                     call.from.id,
                     call.from.username.as_deref(),
@@ -241,8 +252,9 @@ pub async fn unmute_callback_handler(
                     bot.send(
                         MessageMethods::send(&message)
                             .text(text)
-                            .reply_parameters(ReplyParameters::new().message_id(message_id))
-                    ).await?;
+                            .reply_parameters(ReplyParameters::new().message_id(message_id)),
+                    )
+                    .await?;
                 } else {
                     bot.send(MessageMethods::send(&message).text(text)).await?;
                 }
@@ -252,7 +264,8 @@ pub async fn unmute_callback_handler(
                     AnswerCallbackQuery::new(call.id.clone())
                         .text("Пользователь не лишен права слова")
                         .show_alert(true),
-                ).await?;
+                )
+                .await?;
             }
         }
         Ok(())
@@ -276,7 +289,7 @@ pub async fn ban_callback_handler(
                     .text("У вас недостаточно прав")
                     .show_alert(true),
             )
-                .await?;
+            .await?;
             return Ok(());
         }
 
@@ -289,16 +302,13 @@ pub async fn ban_callback_handler(
                         .text("Пользователь уже исключен из чата")
                         .show_alert(true),
                 )
-                    .await?;
+                .await?;
             }
             _ => {
                 bot.send(BanChatMember::new(chat_id, user_id)).await?;
 
-                let user_mention = get_user_mention(
-                    member.id(),
-                    member.username(),
-                    member.first_name().parse()?,
-                );
+                let user_mention =
+                    get_user_mention(member.id(), member.username(), member.first_name().parse()?);
                 let admin_mention = get_user_mention(
                     call.from.id,
                     call.from.username.as_deref(),
@@ -316,8 +326,9 @@ pub async fn ban_callback_handler(
                     bot.send(
                         MessageMethods::send(&message)
                             .text(text)
-                            .reply_parameters(ReplyParameters::new().message_id(message_id))
-                    ).await?;
+                            .reply_parameters(ReplyParameters::new().message_id(message_id)),
+                    )
+                    .await?;
                 } else {
                     bot.send(MessageMethods::send(&message).text(text)).await?;
                 }
