@@ -2,10 +2,12 @@ use crate::bot::utils::text::clear_text;
 use telers::types::Message;
 
 pub fn get_user_mention(user_id: i64, username: Option<&str>, full_name: String) -> Box<str> {
+    let full_name = clear_text(full_name);
+
     let display_name = if full_name.is_empty() {
         user_id.to_string()
     } else {
-        clear_text(full_name)
+        full_name
     };
 
     let user_id_str = user_id.to_string();
@@ -39,19 +41,29 @@ pub fn get_user_info(msg: &Message) -> (i64, Option<Box<str>>, Box<str>) {
             c.title().unwrap_or_default().to_string().into_boxed_str(),
         )
     } else if let Some(u) = msg.from() {
-        let name = format!("{} {}", u.first_name, u.last_name.as_deref().unwrap_or_default())
-            .trim()
-            .to_string();
+        let name = format!(
+            "{} {}",
+            u.first_name,
+            u.last_name.as_deref().unwrap_or_default()
+        )
+        .trim()
+        .to_string();
         (
             u.id,
-            u.username.as_deref().map(|s| s.to_string().into_boxed_str()),
+            u.username
+                .as_deref()
+                .map(|s| s.to_string().into_boxed_str()),
             name.into_boxed_str(),
         )
     } else {
         let c = msg.chat();
-        let name = format!("{} {}", c.first_name().unwrap_or_default(), c.last_name().unwrap_or_default())
-            .trim()
-            .to_string();
+        let name = format!(
+            "{} {}",
+            c.first_name().unwrap_or_default(),
+            c.last_name().unwrap_or_default()
+        )
+        .trim()
+        .to_string();
         (
             c.id(),
             c.username().map(|s| s.to_string().into_boxed_str()),
