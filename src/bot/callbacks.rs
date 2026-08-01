@@ -15,7 +15,7 @@ use crate::database::repo::garant_repo::GarantRepo;
 use telers::event::simple::HandlerResult;
 use telers::methods::{
     AnswerCallbackQuery, ApproveChatJoinRequest, BanChatMember, DeclineChatJoinRequest,
-    DeleteMessages, EditMessageReplyMarkup, GetChatMember, RestrictChatMember
+    DeleteMessages, EditMessageReplyMarkup, GetChatMember, RestrictChatMember,
 };
 use telers::types::{CallbackQuery, ChatMember, ChatPermissions, ReplyParameters};
 use telers::{Bot, Extension};

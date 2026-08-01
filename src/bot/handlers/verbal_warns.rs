@@ -124,7 +124,11 @@ pub async fn list_warns_command_handler(
             .await?;
 
         if let Some(user) = user_obj {
-            (user.id, user.username.map(|s| s.into_boxed_str()), user.full_name.into_boxed_str())
+            (
+                user.id,
+                user.username.map(|s| s.into_boxed_str()),
+                user.full_name.into_boxed_str(),
+            )
         } else {
             return Ok(());
         }

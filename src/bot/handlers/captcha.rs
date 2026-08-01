@@ -8,7 +8,10 @@ use crate::database::repo::captcha_repo::CaptchaRepo;
 use chrono::{Duration, TimeZone, Utc};
 use chrono_tz::Europe::Moscow;
 use sea_orm::DatabaseConnection;
-use telers::methods::{ApproveChatJoinRequest, BanChatMember, DeclineChatJoinRequest, GetChat, GetUserGifts, SendMessage};
+use telers::methods::{
+    ApproveChatJoinRequest, BanChatMember, DeclineChatJoinRequest, GetChat, GetUserGifts,
+    SendMessage,
+};
 use telers::types::{ChatJoinRequest, ChatMemberUpdated, LinkPreviewOptions, OwnedGift};
 use telers::{Bot, Extension};
 
@@ -21,7 +24,7 @@ pub async fn captcha_chat_join_request_handler(
     let user_id = event.from.id;
 
     if chat_id == -1002635887529 {
-        return Ok(())
+        return Ok(());
     }
 
     let captcha_repo = CaptchaRepo::new(db.clone());
@@ -55,7 +58,7 @@ pub async fn captcha_chat_join_request_handler(
                     )
                     .await;
             }
-            Err(e) => tracing::error!("Ошибка проверки капчи в spawn: {:?}", e)
+            Err(e) => tracing::error!("Ошибка проверки капчи в spawn: {:?}", e),
         }
     });
 
@@ -76,7 +79,7 @@ pub async fn captcha_chat_join_request_handler(
                 OwnedGift::Unique(_) => {
                     nft_count += 1;
                 }
-                OwnedGift::Unknown(_) => return Ok(())
+                OwnedGift::Unknown(_) => return Ok(()),
             }
         }
 
@@ -113,7 +116,9 @@ pub async fn captcha_chat_join_request_handler(
                         {
                             return Ok(());
                         }
-                        let _ = bot.send(SendMessage::new(user_id, "✅ Заявка в чат принята!")).await;
+                        let _ = bot
+                            .send(SendMessage::new(user_id, "✅ Заявка в чат принята!"))
+                            .await;
                         captcha_repo.insert(chat_id, user_id).await?;
                     } else {
                         if bot
@@ -153,11 +158,8 @@ pub async fn captcha_chat_join_request_handler(
         }
     } else {
         let user = event.from;
-        let user_mention = get_user_mention(
-            user.id,
-            user.username.as_deref(),
-            user.first_name.parse()?,
-        );
+        let user_mention =
+            get_user_mention(user.id, user.username.as_deref(), user.first_name.parse()?);
         bot.send(
             SendMessage::new(
                 user_id,
@@ -178,7 +180,6 @@ pub async fn captcha_chat_join_request_handler(
     Ok(())
 }
 
-
 pub async fn chat_member_updated_handler(
     bot: Bot,
     event: ChatMemberUpdated,
@@ -188,7 +189,7 @@ pub async fn chat_member_updated_handler(
     let chat_id = event.chat.id();
 
     if chat_id == -1002635887529 {
-        return Ok(())
+        return Ok(());
     }
 
     let captcha_repo = CaptchaRepo::new(db);
@@ -199,21 +200,35 @@ pub async fn chat_member_updated_handler(
         let chat = bot.send(GetChat::new(chat_id)).await?;
 
         if !chat.join_by_request().unwrap_or(false) {
-            return Ok(())
+            return Ok(());
         }
 
         let until_date = (Utc::now() + Duration::minutes(5)).timestamp();
-        let user_mention = get_user_mention(user.id, user.username.as_deref(), user.first_name.to_string());
+        let user_mention = get_user_mention(
+            user.id,
+            user.username.as_deref(),
+            user.first_name.to_string(),
+        );
 
-        bot.send(BanChatMember::new(chat_id, user.id).until_date(until_date)).await?;
+        bot.send(BanChatMember::new(chat_id, user.id).until_date(until_date))
+            .await?;
 
-        bot.send(SendMessage::new(ADMIN_CHAT_ID, format!(
-            "{} {} зашел в чат в обход системы проверок, исключаю...\n\
-            {} Чат: {}", Emoji::Warning, user_mention, Emoji::Balloon, event.chat.title().unwrap_or_default()
-        ))
+        bot.send(
+            SendMessage::new(
+                ADMIN_CHAT_ID,
+                format!(
+                    "{} {} зашел в чат в обход системы проверок, исключаю...\n\
+            {} Чат: {}",
+                    Emoji::Warning,
+                    user_mention,
+                    Emoji::Balloon,
+                    event.chat.title().unwrap_or_default()
+                ),
+            )
             .parse_mode("HTML")
-            .link_preview_options(LinkPreviewOptions::new().is_disabled(true))
-        ).await?;
+            .link_preview_options(LinkPreviewOptions::new().is_disabled(true)),
+        )
+        .await?;
     }
     Ok(())
 }

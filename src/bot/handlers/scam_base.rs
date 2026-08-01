@@ -196,7 +196,8 @@ pub async fn set_scam_command_handler(
                     active_model.reason = Set(reason);
                     scam_base_repo.update(active_model).await?;
 
-                    bot.send(DeleteMessage::new(channel_chat_id, channel_message_id)).await?;
+                    bot.send(DeleteMessage::new(channel_chat_id, channel_message_id))
+                        .await?;
                 }
                 _ => {
                     scam_base_repo
@@ -213,7 +214,6 @@ pub async fn set_scam_command_handler(
                         .await?;
                 }
             }
-
         }
     }
     Ok(())
@@ -247,20 +247,21 @@ pub async fn remove_scam_command_handler(
             Some((scam, _)) => {
                 if command.to_lowercase().contains("ошибка") {
                     if !GL_ADMINS.contains(&admin.0) {
-                        bot.send(MessageMethods::send(&msg)
-                            .text(format!(
-                                "{} У вас недостаточно прав для выполнения данной команды.",
-                                Emoji::Exclamation)
-                            )
-                        ).await?;
+                        bot.send(MessageMethods::send(&msg).text(format!(
+                            "{} У вас недостаточно прав для выполнения данной команды.",
+                            Emoji::Exclamation
+                        )))
+                        .await?;
 
-                        return Ok(())
+                        return Ok(());
                     }
 
                     let channel_chat_id = scam.channel_chat_id;
                     let channel_message_id = scam.channel_message_id;
 
-                    let _ = bot.send(DeleteMessage::new(channel_chat_id, channel_message_id)).await;
+                    let _ = bot
+                        .send(DeleteMessage::new(channel_chat_id, channel_message_id))
+                        .await;
                     scam_base_repo.delete(scam).await?;
 
                     format!(
@@ -311,8 +312,11 @@ pub async fn reason_scam_command_handler(
 
         let (photo, msg_text) = match scam_base {
             Some((scam_base, Some(admin_user))) => {
-                let admin_mention =
-                    get_user_mention(admin_user.id, admin_user.username.as_deref(), admin_user.full_name);
+                let admin_mention = get_user_mention(
+                    admin_user.id,
+                    admin_user.username.as_deref(),
+                    admin_user.full_name,
+                );
 
                 let status = if scam_base.status {
                     "находится"

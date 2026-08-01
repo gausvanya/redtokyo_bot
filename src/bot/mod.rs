@@ -18,10 +18,10 @@ use std::fmt::Display;
 use telers::enums::UpdateType;
 use telers::event::simple;
 use telers::methods::SetWebhook;
-use telers::webhooks::axum::{get_updates_router, UpdatesHandler};
+use telers::webhooks::axum::{UpdatesHandler, get_updates_router};
 use telers::{Bot, Dispatcher, Router};
 use tokio::net::TcpListener;
-use tokio::sync::broadcast::{channel, Receiver, Sender};
+use tokio::sync::broadcast::{Receiver, Sender, channel};
 
 async fn set_webhook(
     bot: Bot,

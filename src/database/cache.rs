@@ -1,10 +1,10 @@
+use crate::bot::libs::iris_api::OrderBookResponse;
 use crate::bot::middlewares::media_group::MediaItem;
 use moka::future::Cache;
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, LazyLock};
 use std::time::Duration;
 use tokio::sync::Mutex;
-use crate::bot::libs::iris_api::OrderBookResponse;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct SummonPayload {
@@ -39,9 +39,10 @@ pub static RAID_CACHE: LazyLock<Cache<String, Vec<i64>>> = LazyLock::new(|| {
         .build()
 });
 
-pub static ORDER_BOOK_CACHE: LazyLock<Cache<&'static str, OrderBookResponse>> = LazyLock::new(|| {
-    Cache::builder()
-        .time_to_live(Duration::from_secs(1800))
-        .max_capacity(1)
-        .build()
-});
+pub static ORDER_BOOK_CACHE: LazyLock<Cache<&'static str, OrderBookResponse>> =
+    LazyLock::new(|| {
+        Cache::builder()
+            .time_to_live(Duration::from_secs(1800))
+            .max_capacity(1)
+            .build()
+    });

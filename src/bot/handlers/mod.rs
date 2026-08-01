@@ -4,16 +4,16 @@ use crate::bot::filters::command::CommandFilter;
 use crate::bot::filters::regexes;
 use telers::enums::ChatMemberType;
 use telers::filters::ChatMemberUpdated;
-use telers::{event::telegram::Handler, Router};
+use telers::{Router, event::telegram::Handler};
 
 mod bot_welcome;
 mod captcha;
+mod db_update;
 mod duel;
 mod garant;
 mod ping;
 mod scam_base;
 mod verbal_warns;
-mod db_update;
 
 #[inline]
 pub fn register_routers() -> Router {
@@ -49,7 +49,7 @@ pub fn register_routers() -> Router {
                 Handler::new(duel::minimal_rate_duel_command_handler)
                     .filter(CommandFilter::new(regexes::re_minimal_rate())),
                 Handler::new(db_update::db_update_command_handler)
-                    .filter(CommandFilter::new(regexes::re_db_update()))
+                    .filter(CommandFilter::new(regexes::re_db_update())),
             ])
         })
         .on_chat_join_request(|observer| {
@@ -59,10 +59,10 @@ pub fn register_routers() -> Router {
             observer.register(Handler::new(bot_welcome::bot_welcome_handler))
         })
         .on_chat_member(|observer| {
-            observer.register(Handler::new(captcha::chat_member_updated_handler)
-                .filter(
-                    ChatMemberUpdated::new(ChatMemberType::Member).old(ChatMemberType::Left)
-                )
+            observer.register(
+                Handler::new(captcha::chat_member_updated_handler).filter(
+                    ChatMemberUpdated::new(ChatMemberType::Member).old(ChatMemberType::Left),
+                ),
             )
         })
         .on_callback_query(|observer| {

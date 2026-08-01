@@ -33,7 +33,6 @@ impl MessageMethods {
     }
 }
 
-
 pub trait IntoMessage {
     fn into_message(self) -> MaybeInaccessibleMessage;
 }

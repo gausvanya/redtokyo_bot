@@ -20,7 +20,8 @@ impl AntispamFilter {
 
         let text = msg.text().or(msg.caption()).unwrap_or("");
         let re = RE_INVITE.get_or_init(|| {
-            Regex::new(r"(?:t\.me|telegram\.(?:org|me|dog))/(?:\+\w+|gram_piarbot\?start=check_)").unwrap()
+            Regex::new(r"(?:t\.me|telegram\.(?:org|me|dog))/(?:\+\w+|gram_piarbot\?start=check_)")
+                .unwrap()
         });
 
         for mat in re.find_iter(text) {

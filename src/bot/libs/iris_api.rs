@@ -1,12 +1,12 @@
 use crate::config::get_config;
-use reqwest::{
-    header::{HeaderMap, HeaderValue, ACCEPT, USER_AGENT},
-    Client,
-};
-use serde::de::DeserializeOwned;
-use serde::Deserialize;
-use std::collections::HashMap;
 use crate::database::cache::ORDER_BOOK_CACHE;
+use reqwest::{
+    Client,
+    header::{ACCEPT, HeaderMap, HeaderValue, USER_AGENT},
+};
+use serde::Deserialize;
+use serde::de::DeserializeOwned;
+use std::collections::HashMap;
 
 pub struct IrisAPI {
     api_id: i64,
@@ -67,7 +67,6 @@ pub enum DuelRateError {
     InvalidPrice(f64),
 }
 
-
 impl OrderBookResponse {
     pub fn best_buy(&self) -> Option<f64> {
         self.result.buy.first().map(|e| e.price)
@@ -119,11 +118,7 @@ impl IrisAPI {
             self.base_url, self.api_id, self.api_token, self.api_version, method
         );
 
-        let response = self.client
-            .get(url)
-            .query(&params)
-            .send()
-            .await?;
+        let response = self.client.get(url).query(&params).send().await?;
 
         let status = response.status();
 
@@ -162,5 +157,6 @@ impl IrisAPI {
 
         ORDER_BOOK_CACHE.insert(CACHE_KEY, response.clone()).await;
 
-        Ok(response)}
+        Ok(response)
+    }
 }

@@ -4,12 +4,12 @@ use crate::bot::keyboards::{duel_chat_keyboard, duel_unmute_keyboard};
 use crate::bot::methods::message::MessageMethods;
 use crate::bot::utils::chat::{ADMIN_CHAT_ID, DUEL_CHAT_ID};
 use crate::bot::utils::parse::parse_amount;
+use crate::bot::utils::trade::get_minimum_duel_rate;
 use crate::bot::utils::user::{get_user_info, get_user_mention};
 use crate::database::cache::WARN_CACHE;
 use telers::methods::RestrictChatMember;
 use telers::types::{ChatPermissions, Message, ReplyParameters};
 use telers::{Bot, Extension};
-use crate::bot::utils::trade::get_minimum_duel_rate;
 
 pub async fn duel_command_handler(
     bot: Bot,
@@ -70,7 +70,8 @@ pub async fn duel_command_handler(
                 return Ok(());
             }
 
-            let user_mention = get_user_mention(user_id, username.as_deref(), full_name.to_string());
+            let user_mention =
+                get_user_mention(user_id, username.as_deref(), full_name.to_string());
 
             let msg_sent = bot.send(
                 MessageMethods::send(&msg).text(
@@ -91,7 +92,11 @@ pub async fn duel_command_handler(
                         min_bet,
                         Some(msg_sent.message_id()),
                     ))
-                    .reply_parameters(ReplyParameters::new().chat_id(chat_id).message_id(msg_sent.message_id())),
+                    .reply_parameters(
+                        ReplyParameters::new()
+                            .chat_id(chat_id)
+                            .message_id(msg_sent.message_id()),
+                    ),
             )
             .await?;
 
@@ -118,11 +123,7 @@ pub async fn duel_command_handler(
     Ok(())
 }
 
-
-pub async fn minimal_rate_duel_command_handler(
-    bot: Bot,
-    msg: Message,
-) -> anyhow::Result<()> {
+pub async fn minimal_rate_duel_command_handler(bot: Bot, msg: Message) -> anyhow::Result<()> {
     if msg.chat().id() != DUEL_CHAT_ID {
         return Ok(());
     }
@@ -130,9 +131,13 @@ pub async fn minimal_rate_duel_command_handler(
     let duel_rate = get_minimum_duel_rate().await?;
     let message_text = format!(
         "{} Минимальная ставка игр: {} ирис-голд.\n{} Курс биржи: {:.2}",
-        Emoji::Gold, duel_rate.min_bet, Emoji::Trade, duel_rate.rate
+        Emoji::Gold,
+        duel_rate.min_bet,
+        Emoji::Trade,
+        duel_rate.rate
     );
 
-    bot.send(MessageMethods::send(&msg).text(message_text)).await?;
+    bot.send(MessageMethods::send(&msg).text(message_text))
+        .await?;
     Ok(())
 }
