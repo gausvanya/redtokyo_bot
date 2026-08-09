@@ -9,7 +9,7 @@ const MIN_BET_LOWER: f64 = 15.0;
 const MIN_BET_UPPER: f64 = 100.0;
 
 pub struct DuelRate {
-    pub min_bet: u64,
+    pub min_bet: i64,
     pub rate: f64,
 }
 
@@ -34,7 +34,7 @@ pub async fn get_minimum_duel_rate() -> Result<DuelRate, DuelRateError> {
     let clamped = rounded.clamp(MIN_BET_LOWER, MIN_BET_UPPER);
 
     Ok(DuelRate {
-        min_bet: clamped as u64,
+        min_bet: clamped as i64,
         rate: mid_price,
     })
 }
