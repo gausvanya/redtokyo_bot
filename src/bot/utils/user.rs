@@ -16,7 +16,7 @@ pub fn get_user_mention(user_id: i64, username: Option<&str>, full_name: String)
         match username {
             Some(uname) => format!("<a href='https://t.me/{}'>{}</a>", uname, display_name),
             None => format!(
-                "<a href='https://t.me/c/{}/9999999'>{}</a>",
+                "<a href='tg://openmessage?chat_id={}'>{}</a>",
                 cropped_id, display_name
             ),
         }
