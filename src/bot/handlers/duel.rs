@@ -31,7 +31,7 @@ pub async fn duel_command_handler(
     }
 
     let duel_rate = get_minimum_duel_rate().await?;
-    let min_bet = duel_rate.min_bet as i64;
+    let min_bet = duel_rate.min_bet;
 
     if (0..min_bet).contains(&amount) {
         let key = format!("warns_low_bet:{chat_id}:{user_id}");
@@ -104,10 +104,11 @@ pub async fn duel_command_handler(
         } else {
             let message_text = format!(
                 "{} внимание!\n\n\
-                В нашем чате разрешены игры только от 50 голд, другие варианты игр будут наказываться при повторной попытке сыграть.\n\n\
+                В нашем чате разрешены игры только от {} голд, другие варианты игр будут наказываться при повторной попытке сыграть.\n\n\
                 {} Подробнее в <code>Заметка 2</code> и <code>Заметка 3</code>\n\n\
                 Игры на меньшие суммы по кнопке ниже {}",
                 Emoji::Bangbang,
+                min_bet,
                 Emoji::Balloon,
                 Emoji::ArrowDown
             );
