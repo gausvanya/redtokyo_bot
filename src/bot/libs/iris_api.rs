@@ -7,6 +7,7 @@ use reqwest::{
 use serde::Deserialize;
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
+use std::sync::LazyLock;
 
 pub struct IrisAPI {
     api_id: i64,
@@ -84,6 +85,17 @@ impl OrderBookResponse {
     }
 }
 
+static HTTP_CLIENT: LazyLock<Client> = LazyLock::new(|| {
+    let mut headers = HeaderMap::new();
+    headers.insert(ACCEPT, HeaderValue::from_static("application/json"));
+    headers.insert(USER_AGENT, HeaderValue::from_static("MyApplicationAPI"));
+
+    Client::builder()
+        .default_headers(headers)
+        .build()
+        .expect("Failed to create reqwest client")
+});
+
 impl IrisAPI {
     pub fn new() -> Self {
         let cfg = get_config();
@@ -94,15 +106,10 @@ impl IrisAPI {
         headers.insert(ACCEPT, HeaderValue::from_static("application/json"));
         headers.insert(USER_AGENT, HeaderValue::from_static("MyApplicationAPI"));
 
-        let client = Client::builder()
-            .default_headers(headers)
-            .build()
-            .expect("Failed to create reqwest client");
-
         Self {
             api_id,
             api_token,
-            client,
+            client: HTTP_CLIENT.clone(),
             base_url: "https://iris-tg.ru/api".into(),
             api_version: "0.5".into(),
         }

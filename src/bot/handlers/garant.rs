@@ -8,7 +8,6 @@ use crate::bot::utils::user::{get_user_info, get_user_mention};
 use crate::database::cache::{SUMMON_CACHE, SummonPayload};
 use crate::database::repo::garant_repo::GarantRepo;
 use sea_orm::DatabaseConnection;
-use telers::methods::EditMessageReplyMarkup;
 use telers::types::Message;
 use telers::{Bot, Extension};
 use uuid::Uuid;
@@ -157,32 +156,27 @@ pub async fn garant_call_command_handler(
 
         let chunks: Vec<Vec<String>> = mentions.chunks(5).map(|chunk| chunk.to_vec()).collect();
 
+        let summon_id = Uuid::new_v4().simple().to_string();
         let mut sent_msg_ids = Vec::new();
 
         for chunk in chunks {
             let text = format!("{}{}", base_text, chunk.join(""));
-            let sent = bot.send(MessageMethods::send(&msg).text(text)).await?;
+            let sent = bot
+                .send(
+                    MessageMethods::send(&msg)
+                        .text(text)
+                        .reply_markup(garant_call_keyboard(summon_id.clone())),
+                )
+                .await?;
             sent_msg_ids.push(sent.message_id());
         }
 
-        let summon_id = Uuid::new_v4().simple().to_string();
-
         let payload = SummonPayload {
             creator_id: user_id,
-            msg_ids: sent_msg_ids.clone(),
+            msg_ids: sent_msg_ids,
         };
 
-        SUMMON_CACHE.insert(summon_id.clone(), payload).await;
-
-        for msg_id in sent_msg_ids {
-            bot.send(
-                EditMessageReplyMarkup::new()
-                    .chat_id(msg.chat().id())
-                    .message_id(msg_id)
-                    .reply_markup(garant_call_keyboard(summon_id.clone())),
-            )
-            .await?;
-        }
+        SUMMON_CACHE.insert(summon_id, payload).await;
     } else {
         bot.send(MessageMethods::send(&msg).text("Список гарантов пуст."))
             .await?;

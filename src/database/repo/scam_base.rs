@@ -76,7 +76,6 @@ impl ScamBaseRepo {
                         scam_base::Column::Reason,
                         scam_base::Column::Status,
                     ])
-                    .do_nothing()
                     .to_owned(),
             )
             .exec_with_returning(&self.db)

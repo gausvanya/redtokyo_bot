@@ -2,13 +2,13 @@ use crate::bot::enums::tg_emoji::Emoji;
 use crate::bot::filters::command::ParsedCommand;
 use crate::bot::keyboards::{duel_chat_keyboard, duel_unmute_keyboard};
 use crate::bot::methods::message::MessageMethods;
-use crate::bot::utils::chat::{ADMIN_CHAT_ID, DUEL_CHAT_ID};
+use crate::bot::utils::chat::{ADMIN_CHAT_ID, DUEL_CHAT_ID, muted_permissions};
 use crate::bot::utils::parse::parse_amount;
 use crate::bot::utils::trade::get_minimum_duel_rate;
 use crate::bot::utils::user::{get_user_info, get_user_mention};
 use crate::database::cache::WARN_CACHE;
 use telers::methods::RestrictChatMember;
-use telers::types::{ChatPermissions, Message, ReplyParameters};
+use telers::types::{Message, ReplyParameters};
 use telers::{Bot, Extension};
 
 pub async fn duel_command_handler(
@@ -42,25 +42,7 @@ pub async fn duel_command_handler(
         if warns >= 2 {
             WARN_CACHE.remove(key.as_str()).await;
             let until_date = (chrono::Utc::now() + chrono::Duration::minutes(5)).timestamp();
-
-            let permissions = ChatPermissions {
-                can_send_messages: Some(false),
-                can_send_audios: Some(false),
-                can_send_documents: Some(false),
-                can_send_photos: Some(false),
-                can_send_videos: Some(false),
-                can_send_video_notes: Some(false),
-                can_send_polls: Some(false),
-                can_send_other_messages: Some(false),
-                can_add_web_page_previews: Some(false),
-                can_react_to_messages: Some(false),
-                can_edit_tag: Some(false),
-                can_change_info: Some(false),
-                can_invite_users: Some(false),
-                can_pin_messages: Some(false),
-                can_send_voice_notes: Some(false),
-                can_manage_topics: Some(false),
-            };
+            let permissions = muted_permissions();
 
             if bot
                 .send(RestrictChatMember::new(chat_id, user_id, permissions).until_date(until_date))

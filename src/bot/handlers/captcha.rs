@@ -1,7 +1,7 @@
 use crate::bot::enums::tg_emoji::Emoji;
 use crate::bot::keyboards::{captcha_keyboard, repeat_reg_keyboard};
 use crate::bot::libs::iris_api::{IrisAPI, IrisApiError};
-use crate::bot::utils::chat::{ADMIN_CHAT_ID, GARANT_CHAT_ID};
+use crate::bot::utils::chat::{ADMIN_CHAT_ID, GARANT_CHAT_ID, PR_CHAT_ID};
 use crate::bot::utils::datetime::get_current_datetime;
 use crate::bot::utils::user::get_user_mention;
 use crate::database::repo::captcha_repo::CaptchaRepo;
@@ -23,7 +23,7 @@ pub async fn captcha_chat_join_request_handler(
     let chat_id = event.chat.id();
     let user_id = event.from.id;
 
-    if chat_id == -1002635887529 {
+    if chat_id == PR_CHAT_ID {
         return Ok(());
     }
 
@@ -103,10 +103,13 @@ pub async fn captcha_chat_join_request_handler(
                     let year_ago_msk = now_msk - Duration::days(365);
 
                     let reg_timestamp_seconds = reg_timestamp / 1000;
-                    let reg_date_msk = Moscow
-                        .timestamp_opt(reg_timestamp_seconds, 0)
-                        .single()
-                        .expect("Invalid timestamp");
+                    let reg_date_msk = match Moscow.timestamp_opt(reg_timestamp_seconds, 0).single() {
+                        Some(dt) => dt,
+                        None => {
+                            tracing::error!("Iris API вернул некорректный timestamp: {}", reg_timestamp);
+                            return Ok(());
+                        }
+                    };
 
                     if reg_date_msk < year_ago_msk {
                         if bot
@@ -188,7 +191,7 @@ pub async fn chat_member_updated_handler(
     let user = event.new_chat_member.user();
     let chat_id = event.chat.id();
 
-    if chat_id == -1002635887529 {
+    if chat_id == PR_CHAT_ID {
         return Ok(());
     }
 

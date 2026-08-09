@@ -112,8 +112,10 @@ pub async fn list_warns_command_handler(
     Extension(db): Extension<DatabaseConnection>,
 ) -> anyhow::Result<()> {
     let command = args.require("command");
+    let normalized_command = command.to_lowercase();
+    let normalized_command = normalized_command.split_whitespace().collect::<Vec<_>>().join(" ");
 
-    let (user_id, username, full_name) = if command.to_lowercase() == "мои усты" {
+    let (user_id, username, full_name) = if normalized_command == "мои усты" {
         let user_obj = get_user_info(&msg);
         (user_obj.0, user_obj.1, user_obj.2)
     } else {

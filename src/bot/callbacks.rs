@@ -7,7 +7,7 @@ use crate::bot::enums::tg_emoji::Emoji;
 use crate::bot::filters::command::ParsedCommand;
 use crate::bot::libs::iris_api::{IrisAPI, IrisApiError};
 use crate::bot::methods::message::MessageMethods;
-use crate::bot::utils::chat::ADMIN_IDS;
+use crate::bot::utils::chat::{full_permissions, ADMIN_IDS};
 use crate::bot::utils::user::get_user_mention;
 use crate::database::cache::SUMMON_CACHE;
 use crate::database::repo::captcha_repo::CaptchaRepo;
@@ -17,7 +17,7 @@ use telers::methods::{
     AnswerCallbackQuery, ApproveChatJoinRequest, BanChatMember, DeclineChatJoinRequest,
     DeleteMessages, EditMessageReplyMarkup, GetChatMember, RestrictChatMember,
 };
-use telers::types::{CallbackQuery, ChatMember, ChatPermissions, ReplyParameters};
+use telers::types::{CallbackQuery, ChatMember, ReplyParameters};
 use telers::{Bot, Extension};
 
 pub async fn captcha_callback_handler(
@@ -211,24 +211,7 @@ pub async fn unmute_callback_handler(
 
         match member {
             ChatMember::Restricted(_) => {
-                let permissions = ChatPermissions {
-                    can_send_messages: Some(true),
-                    can_send_audios: Some(true),
-                    can_send_documents: Some(true),
-                    can_send_photos: Some(true),
-                    can_send_videos: Some(true),
-                    can_send_video_notes: Some(true),
-                    can_send_polls: Some(true),
-                    can_send_other_messages: Some(true),
-                    can_add_web_page_previews: Some(true),
-                    can_react_to_messages: Some(true),
-                    can_edit_tag: Some(true),
-                    can_change_info: Some(true),
-                    can_invite_users: Some(true),
-                    can_pin_messages: Some(true),
-                    can_send_voice_notes: Some(true),
-                    can_manage_topics: Some(true),
-                };
+                let permissions = full_permissions();
 
                 bot.send(RestrictChatMember::new(chat_id, user_id, permissions))
                     .await?;

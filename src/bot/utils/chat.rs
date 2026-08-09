@@ -1,11 +1,14 @@
 use telers::Bot;
 use telers::methods::{LeaveChat, SendMessage};
+use telers::types::ChatPermissions;
 
 pub const ADMIN_CHAT_ID: i64 = -1003904096608;
 pub const DUEL_CHAT_ID: i64 = -1001876817712;
 pub const GARANT_CHAT_ID: i64 = -1002393805826;
 pub const SCAM_CHANNEL_ID: i64 = -1003979922414;
+pub const PR_CHAT_ID: i64 = -1002635887529;
 pub const GL_ADMINS: [i64; 3] = [1830362280, 8630742541, 1396129644];
+
 pub const ADMIN_IDS: [i64; 20] = [
     1830362280, 5785884253, 8577420947, 1396129644, 5448752141, 5253969011, 5971869071, 7868116959,
     1979940844, 8630742541, 8138413942, 6842411953, 7595142206, 8003158848, 7693221405, 8083769211,
@@ -40,4 +43,47 @@ pub async fn is_allowed_chat(bot: &Bot, chat_id: i64) -> bool {
         return false;
     }
     true
+}
+
+
+pub fn muted_permissions() -> ChatPermissions {
+    ChatPermissions {
+        can_send_messages: Some(false),
+        can_send_audios: Some(false),
+        can_send_documents: Some(false),
+        can_send_photos: Some(false),
+        can_send_videos: Some(false),
+        can_send_video_notes: Some(false),
+        can_send_polls: Some(false),
+        can_send_other_messages: Some(false),
+        can_add_web_page_previews: Some(false),
+        can_react_to_messages: Some(false),
+        can_edit_tag: Some(false),
+        can_change_info: Some(false),
+        can_invite_users: Some(false),
+        can_pin_messages: Some(false),
+        can_send_voice_notes: Some(false),
+        can_manage_topics: Some(false),
+    }
+}
+
+pub fn full_permissions() -> ChatPermissions {
+    ChatPermissions {
+        can_send_messages: Some(true),
+        can_send_audios: Some(true),
+        can_send_documents: Some(true),
+        can_send_photos: Some(true),
+        can_send_videos: Some(true),
+        can_send_video_notes: Some(true),
+        can_send_polls: Some(true),
+        can_send_other_messages: Some(true),
+        can_add_web_page_previews: Some(true),
+        can_react_to_messages: Some(true),
+        can_edit_tag: Some(true),
+        can_change_info: Some(true),
+        can_invite_users: Some(true),
+        can_pin_messages: Some(true),
+        can_send_voice_notes: Some(true),
+        can_manage_topics: Some(true),
+    }
 }

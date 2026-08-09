@@ -49,8 +49,6 @@ where
                 new_mutex
             };
 
-            let mut guard = mutex.lock().await;
-
             let new_item = if let Some(photo) = message.photo().and_then(|p| p.last()) {
                 Some(MediaItem {
                     file_id: photo.file_id.to_string(),
@@ -68,13 +66,16 @@ where
                 })
             };
 
-            if let Some(item) = new_item
-                && !guard.iter().any(|i| i.file_id == item.file_id)
             {
-                guard.push(item);
+                let mut guard = mutex.lock().await;
+                if let Some(item) = new_item
+                    && !guard.iter().any(|i| i.file_id == item.file_id)
+                {
+                    guard.push(item);
+                }
             }
 
-            sleep(Duration::from_millis(3000)).await;
+            sleep(Duration::from_millis(2000)).await;
         }
 
         Ok((request, EventReturn::default()))

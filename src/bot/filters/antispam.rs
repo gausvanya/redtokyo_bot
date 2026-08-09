@@ -1,5 +1,5 @@
 use crate::bot::filters::regexes::RE_INVITE;
-use crate::bot::utils::chat::{ALLOWED_BOT_IDS, ALLOWED_URLS};
+use crate::bot::utils::chat::{ALLOWED_BOT_IDS, ALLOWED_URLS, PR_CHAT_ID};
 use crate::bot::utils::user::get_user_info;
 use crate::database::cache::RAID_CACHE;
 use regex::Regex;
@@ -84,8 +84,7 @@ impl AntispamFilter {
     where
         C: Session + Send + Sync + 'static,
     {
-        if msg.chat().id() == -1002635887529 {
-            // пиар чат ид
+        if msg.chat().id() == PR_CHAT_ID {
             return (true, "null", Vec::new());
         }
 

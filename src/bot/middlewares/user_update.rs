@@ -69,7 +69,13 @@ where
 
             let user_repo = UserRepo::new(db.clone());
 
-            let _ = user_repo.insert(user_id, username, full_name).await;
+            if user_repo
+                .insert(user_id, username.clone(), full_name.clone())
+                .await
+                .is_ok()
+            {
+                USER_CACHE.insert(user_id, (username, full_name)).await;
+            }
         }
 
         Ok((request, EventReturn::default()))
