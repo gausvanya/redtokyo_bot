@@ -1,5 +1,6 @@
-use sea_orm::{ConnectOptions, ConnectionTrait, Database, DatabaseConnection, DbConn, DbErr};
 use std::time::Duration;
+
+use sea_orm::{ConnectOptions, ConnectionTrait, Database, DatabaseConnection, DbConn, DbErr};
 
 pub mod cache;
 pub mod models;

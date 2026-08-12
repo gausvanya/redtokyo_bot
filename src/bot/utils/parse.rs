@@ -1,5 +1,7 @@
 pub fn parse_amount(input: &str) -> i64 {
-    let input = input.trim().to_lowercase();
+    let input = input
+        .trim()
+        .to_lowercase();
 
     if input.starts_with("http") || input.contains("t.me") {
         return -1;

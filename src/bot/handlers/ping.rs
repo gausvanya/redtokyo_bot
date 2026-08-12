@@ -1,9 +1,10 @@
 use std::time::Instant;
 
-use crate::bot::enums::tg_emoji::Emoji;
-use crate::bot::filters::command::ParsedCommand;
-use crate::bot::methods::message::MessageMethods;
 use telers::{Bot, Extension, types::Message};
+
+use crate::bot::{
+    enums::tg_emoji::Emoji, filters::command::ParsedCommand, methods::message::MessageMethods,
+};
 
 pub async fn ping_command_handler(
     bot: Bot,
@@ -17,7 +18,9 @@ pub async fn ping_command_handler(
         .send(MessageMethods::send(&msg).text(message_text))
         .await?;
 
-    let ping = start_ping.elapsed().as_millis();
+    let ping = start_ping
+        .elapsed()
+        .as_millis();
 
     let (status, emoji) = match ping {
         0..50 => ("скоростной", Emoji::Rocket),
@@ -27,8 +30,7 @@ pub async fn ping_command_handler(
     };
 
     let message_text = format!(
-        "{} <b>ПОНГ!</b>\n\n\
-        {} Ответ: <b>{} | {} ms.</b>",
+        "{} <b>ПОНГ!</b>\n\n{} Ответ: <b>{} | {} ms.</b>",
         Emoji::PingPong,
         emoji,
         status,

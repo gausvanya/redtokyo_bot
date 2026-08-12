@@ -1,7 +1,8 @@
-use crate::database::models::successful_captcha;
 use sea_orm::{
     ColumnTrait, DatabaseConnection, DbErr, EntityTrait, InsertResult, NotSet, QueryFilter, Set,
 };
+
+use crate::database::models::successful_captcha;
 
 pub struct CaptchaRepo {
     pub db: DatabaseConnection,
@@ -9,7 +10,9 @@ pub struct CaptchaRepo {
 
 impl CaptchaRepo {
     pub fn new(db: DatabaseConnection) -> Self {
-        CaptchaRepo { db }
+        CaptchaRepo {
+            db,
+        }
     }
 
     #[inline]

@@ -9,13 +9,14 @@ pub mod middlewares;
 mod task;
 mod utils;
 
-use crate::bot::handlers::register_routers;
-use crate::bot::task::verbal_warns_clear_task;
-use crate::config::Config;
 use sea_orm::DatabaseConnection;
-use telers::enums::UpdateType;
-use telers::{Bot, Dispatcher, Router};
+use telers::{Bot, Dispatcher, Router, enums::UpdateType};
 use tokio::sync::broadcast::{Receiver, Sender, channel};
+
+use crate::{
+    bot::{handlers::register_routers, task::verbal_warns_clear_task},
+    config::Config,
+};
 
 fn load_middleware(router: Router) -> Router {
     router.on_update(|observer| {

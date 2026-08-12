@@ -1,15 +1,20 @@
-use crate::bot::enums::tg_emoji::Emoji;
-use crate::bot::filters::command::ParsedCommand;
-use crate::bot::filters::get_user::GetUserInfo;
-use crate::bot::methods::message::MessageMethods;
-use crate::bot::utils::chat::ADMIN_IDS;
-use crate::bot::utils::datetime::get_current_datetime;
-use crate::bot::utils::user::{get_user_info, get_user_mention};
-use crate::database::repo::verbal_warns_repo::VerbalWarnsRepo;
 use chrono::Duration;
 use sea_orm::DatabaseConnection;
-use telers::types::Message;
-use telers::{Bot, Extension};
+use telers::{Bot, Extension, types::Message};
+
+use crate::{
+    bot::{
+        enums::tg_emoji::Emoji,
+        filters::{command::ParsedCommand, get_user::GetUserInfo},
+        methods::message::MessageMethods,
+        utils::{
+            chat::ADMIN_IDS,
+            datetime::get_current_datetime,
+            user::{get_user_info, get_user_mention},
+        },
+    },
+    database::repo::verbal_warns_repo::VerbalWarnsRepo,
+};
 
 pub async fn set_warn_command_handler(
     bot: Bot,
@@ -23,7 +28,11 @@ pub async fn set_warn_command_handler(
         return Ok(());
     }
 
-    let (user, reason) = (args.get("user"), args.require("reason").to_string());
+    let (user, reason) = (
+        args.get("user"),
+        args.require("reason")
+            .to_string(),
+    );
 
     let user_obj = GetUserInfo::new(user.map(|s| s.to_string()), &db, bot.clone())
         .resolve(&msg)
@@ -34,8 +43,7 @@ pub async fn set_warn_command_handler(
 
         let msg_send = bot
             .send(MessageMethods::send(&msg).text(format!(
-                "{} Пользователю {} выдано устное предупреждение\n\
-        {} Причина: {}",
+                "{} Пользователю {} выдано устное предупреждение\n{} Причина: {}",
                 Emoji::Warning,
                 user_mention,
                 Emoji::Balloon,
@@ -47,14 +55,7 @@ pub async fn set_warn_command_handler(
         let timestamp = get_current_datetime() + Duration::days(1);
 
         warn_repo
-            .insert(
-                msg.chat().id(),
-                user.id,
-                admin_id,
-                msg_send.message_id(),
-                reason,
-                timestamp,
-            )
+            .insert(msg.chat().id(), user.id, admin_id, msg_send.message_id(), reason, timestamp)
             .await?;
     }
     Ok(())
@@ -82,7 +83,9 @@ pub async fn remove_warn_command_handler(
         let user_mention = get_user_mention(user.id, user.username.as_deref(), user.full_name);
         let warn_repo = VerbalWarnsRepo::new(db);
 
-        let user_warn = warn_repo.get(msg.chat().id(), user.id).await?;
+        let user_warn = warn_repo
+            .get(msg.chat().id(), user.id)
+            .await?;
 
         if let Some(user_warn) = user_warn {
             bot.send(MessageMethods::send(&msg).text(format!(
@@ -92,7 +95,9 @@ pub async fn remove_warn_command_handler(
             )))
             .await?;
 
-            warn_repo.delete(user_warn).await?;
+            warn_repo
+                .delete(user_warn)
+                .await?;
         } else {
             bot.send(MessageMethods::send(&msg).text(format!(
                 "{} У пользователя {} отсутствуют устные предупреждения",
@@ -113,7 +118,10 @@ pub async fn list_warns_command_handler(
 ) -> anyhow::Result<()> {
     let command = args.require("command");
     let normalized_command = command.to_lowercase();
-    let normalized_command = normalized_command.split_whitespace().collect::<Vec<_>>().join(" ");
+    let normalized_command = normalized_command
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ");
 
     let (user_id, username, full_name) = if normalized_command == "мои усты" {
         let user_obj = get_user_info(&msg);
@@ -128,8 +136,10 @@ pub async fn list_warns_command_handler(
         if let Some(user) = user_obj {
             (
                 user.id,
-                user.username.map(|s| s.into_boxed_str()),
-                user.full_name.into_boxed_str(),
+                user.username
+                    .map(|s| s.into_boxed_str()),
+                user.full_name
+                    .into_boxed_str(),
             )
         } else {
             return Ok(());
@@ -138,11 +148,7 @@ pub async fn list_warns_command_handler(
 
     let user_mention = get_user_mention(user_id, username.as_deref(), full_name.to_string());
 
-    let mut message_text = format!(
-        "{} Устные предупреждения {}:\n",
-        Emoji::Warning,
-        user_mention
-    );
+    let mut message_text = format!("{} Устные предупреждения {}:\n", Emoji::Warning, user_mention);
 
     let warn_repo = VerbalWarnsRepo::new(db);
 
@@ -159,16 +165,14 @@ pub async fn list_warns_command_handler(
             let expires_in = if time_left.num_seconds() <= 0 {
                 "снимается...".to_string()
             } else {
-                format!(
-                    "{} ч. {} мин.",
-                    time_left.num_hours(),
-                    time_left.num_minutes() % 60
-                )
+                format!("{} ч. {} мин.", time_left.num_hours(), time_left.num_minutes() % 60)
             };
 
             let url = format!(
                 "https://t.me/c/{}/{}",
-                warn.chat_id.to_string().replace("-100", ""),
+                warn.chat_id
+                    .to_string()
+                    .replace("-100", ""),
                 warn.message_id
             );
             message_text.push_str(&format!(

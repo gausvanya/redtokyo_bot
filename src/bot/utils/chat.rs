@@ -1,6 +1,8 @@
-use telers::Bot;
-use telers::methods::{LeaveChat, SendMessage};
-use telers::types::ChatPermissions;
+use telers::{
+    Bot,
+    methods::{LeaveChat, SendMessage},
+    types::ChatPermissions,
+};
 
 pub const ADMIN_CHAT_ID: i64 = -1003904096608;
 pub const DUEL_CHAT_ID: i64 = -1001876817712;
@@ -38,13 +40,16 @@ pub const ALLOWED_URLS: [&str; 5] = [
 
 pub async fn is_allowed_chat(bot: &Bot, chat_id: i64) -> bool {
     if !ALLOWED_CHATS.contains(&chat_id) {
-        let _ = bot.send(SendMessage::new(chat_id, "👋 Я выхожу")).await;
-        let _ = bot.send(LeaveChat::new(chat_id)).await;
+        let _ = bot
+            .send(SendMessage::new(chat_id, "👋 Я выхожу"))
+            .await;
+        let _ = bot
+            .send(LeaveChat::new(chat_id))
+            .await;
         return false;
     }
     true
 }
-
 
 pub fn muted_permissions() -> ChatPermissions {
     ChatPermissions {

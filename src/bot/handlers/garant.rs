@@ -1,16 +1,23 @@
-use crate::bot::enums::tg_emoji::Emoji;
-use crate::bot::filters::command::ParsedCommand;
-use crate::bot::filters::get_user::GetUserInfo;
-use crate::bot::keyboards::garant_call_keyboard;
-use crate::bot::methods::message::MessageMethods;
-use crate::bot::utils::chat::GL_ADMINS;
-use crate::bot::utils::user::{get_user_info, get_user_mention};
-use crate::database::cache::{SUMMON_CACHE, SummonPayload};
-use crate::database::repo::garant_repo::GarantRepo;
 use sea_orm::DatabaseConnection;
-use telers::types::Message;
-use telers::{Bot, Extension};
+use telers::{Bot, Extension, types::Message};
 use uuid::Uuid;
+
+use crate::{
+    bot::{
+        enums::tg_emoji::Emoji,
+        filters::{command::ParsedCommand, get_user::GetUserInfo},
+        keyboards::garant_call_keyboard,
+        methods::message::MessageMethods,
+        utils::{
+            chat::GL_ADMINS,
+            user::{get_user_info, get_user_mention},
+        },
+    },
+    database::{
+        cache::{SUMMON_CACHE, SummonPayload},
+        repo::garant_repo::GarantRepo,
+    },
+};
 
 pub async fn set_garant_command_handler(
     bot: Bot,
@@ -24,7 +31,11 @@ pub async fn set_garant_command_handler(
         return Ok(());
     }
 
-    let (user, comment) = (args.get("user"), args.require("comment").to_string());
+    let (user, comment) = (
+        args.get("user"),
+        args.require("comment")
+            .to_string(),
+    );
 
     let user_obj = GetUserInfo::new(user.map(|s| s.to_string()), &db, bot.clone())
         .resolve(&msg)
@@ -32,7 +43,9 @@ pub async fn set_garant_command_handler(
 
     if let Some(user) = user_obj {
         let garant_repo = GarantRepo::new(db);
-        let _ = garant_repo.insert(user.id, comment).await;
+        let _ = garant_repo
+            .insert(user.id, comment)
+            .await;
 
         let user_mention = get_user_mention(user.id, user.username.as_deref(), user.full_name);
 
@@ -66,11 +79,15 @@ pub async fn remove_garant_command_handler(
 
     if let Some(user) = user_obj {
         let garant_repo = GarantRepo::new(db);
-        let is_garant = garant_repo.get(user.id).await?;
+        let is_garant = garant_repo
+            .get(user.id)
+            .await?;
         let user_mention = get_user_mention(user.id, user.username.as_deref(), user.full_name);
 
         if let Some(garant_model) = is_garant {
-            let _ = garant_repo.delete(garant_model).await;
+            let _ = garant_repo
+                .delete(garant_model)
+                .await;
 
             bot.send(MessageMethods::send(&msg).text(format!(
                 "{} {} исключен из списка гарантов RedTokyo",
@@ -96,7 +113,9 @@ pub async fn garant_list_command_handler(
     Extension(db): Extension<DatabaseConnection>,
 ) -> anyhow::Result<()> {
     let garant_repo = GarantRepo::new(db);
-    let garants = garant_repo.get_all().await?;
+    let garants = garant_repo
+        .get_all()
+        .await?;
 
     let text = if !garants.is_empty() {
         let mut buffer = String::new();
@@ -133,17 +152,17 @@ pub async fn garant_call_command_handler(
 ) -> anyhow::Result<()> {
     let (user_id, username, full_name) = get_user_info(&msg);
     let user_mention = get_user_mention(user_id, username.as_deref(), full_name.to_string());
-    let reason = args.get("reason").unwrap_or_default();
+    let reason = args
+        .get("reason")
+        .unwrap_or_default();
 
     let garant_repo = GarantRepo::new(db);
-    let garants = garant_repo.get_all().await?;
+    let garants = garant_repo
+        .get_all()
+        .await?;
 
     if !garants.is_empty() {
-        let mut base_text = format!(
-            "{} {} созывает гарантов чата",
-            Emoji::Megaphone,
-            user_mention
-        );
+        let mut base_text = format!("{} {} созывает гарантов чата", Emoji::Megaphone, user_mention);
 
         if !reason.is_empty() {
             base_text.push_str(&format!("\n\n{} {}", Emoji::Balloon, reason));
@@ -154,9 +173,14 @@ pub async fn garant_call_command_handler(
             .map(|(garant, _)| format!(r#"<a href="tg://user?id={}">&#8296;</a>"#, garant.user_id))
             .collect();
 
-        let chunks: Vec<Vec<String>> = mentions.chunks(5).map(|chunk| chunk.to_vec()).collect();
+        let chunks: Vec<Vec<String>> = mentions
+            .chunks(5)
+            .map(|chunk| chunk.to_vec())
+            .collect();
 
-        let summon_id = Uuid::new_v4().simple().to_string();
+        let summon_id = Uuid::new_v4()
+            .simple()
+            .to_string();
         let mut sent_msg_ids = Vec::new();
 
         for chunk in chunks {
@@ -176,7 +200,9 @@ pub async fn garant_call_command_handler(
             msg_ids: sent_msg_ids,
         };
 
-        SUMMON_CACHE.insert(summon_id, payload).await;
+        SUMMON_CACHE
+            .insert(summon_id, payload)
+            .await;
     } else {
         bot.send(MessageMethods::send(&msg).text("Список гарантов пуст."))
             .await?;

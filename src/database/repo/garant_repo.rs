@@ -1,8 +1,9 @@
-use crate::database::models::{garant, user};
-use sea_orm::sea_query::OnConflict;
 use sea_orm::{
     ActiveModelTrait, DatabaseConnection, DbErr, DeleteResult, EntityTrait, IntoActiveModel, Set,
+    sea_query::OnConflict,
 };
+
+use crate::database::models::{garant, user};
 
 pub struct GarantRepo {
     pub db: DatabaseConnection,
@@ -10,13 +11,18 @@ pub struct GarantRepo {
 
 impl GarantRepo {
     pub fn new(db: DatabaseConnection) -> Self {
-        GarantRepo { db }
+        GarantRepo {
+            db,
+        }
     }
 
     #[inline]
     pub async fn get(&self, user_id: i64) -> Result<Option<garant::Model>, DbErr> {
-        garant::Entity::find_by_id(user_id).one(&self.db).await
+        garant::Entity::find_by_id(user_id)
+            .one(&self.db)
+            .await
     }
+
     #[inline]
     pub async fn get_all(&self) -> Result<Vec<(garant::Model, Vec<user::Model>)>, DbErr> {
         garant::Entity::find()
@@ -27,7 +33,10 @@ impl GarantRepo {
 
     #[inline]
     pub async fn delete(&self, garant: garant::Model) -> Result<DeleteResult, DbErr> {
-        garant.into_active_model().delete(&self.db).await
+        garant
+            .into_active_model()
+            .delete(&self.db)
+            .await
     }
 
     #[inline]

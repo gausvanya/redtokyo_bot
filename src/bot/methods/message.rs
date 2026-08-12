@@ -1,8 +1,7 @@
-use telers::types::{MaybeInaccessibleMessage, Message};
 use telers::{
     enums::ParseMode,
     methods::{EditMessageText, SendMessage},
-    types::{LinkPreviewOptions, ReplyParameters},
+    types::{LinkPreviewOptions, MaybeInaccessibleMessage, Message, ReplyParameters},
 };
 
 pub struct MessageMethods;

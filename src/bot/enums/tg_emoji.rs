@@ -1,4 +1,5 @@
 use std::fmt;
+
 use strum::EnumProperty;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, EnumProperty)]
@@ -29,8 +30,12 @@ pub enum Emoji {
 
 impl fmt::Display for Emoji {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let id = self.get_str("id").unwrap_or("");
-        let char = self.get_str("char").unwrap_or("");
+        let id = self
+            .get_str("id")
+            .unwrap_or("");
+        let char = self
+            .get_str("char")
+            .unwrap_or("");
 
         write!(f, "<tg-emoji emoji-id='{}'>{}</tg-emoji>", id, char)
     }

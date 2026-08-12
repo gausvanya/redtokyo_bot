@@ -1,10 +1,9 @@
-use crate::bot::callbacks;
-use crate::bot::filters::callback::CallbackFilter;
-use crate::bot::filters::command::CommandFilter;
-use crate::bot::filters::regexes;
-use telers::enums::ChatMemberType;
-use telers::filters::ChatMemberUpdated;
-use telers::{Router, event::telegram::Handler};
+use telers::{Router, enums::ChatMemberType, event::telegram::Handler, filters::ChatMemberUpdated};
+
+use crate::bot::{
+    callbacks,
+    filters::{callback::CallbackFilter, command::CommandFilter, regexes},
+};
 
 mod bot_welcome;
 mod captcha;

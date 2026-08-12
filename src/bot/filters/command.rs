@@ -1,7 +1,6 @@
 use regex::Regex;
 use smallvec::SmallVec;
-use telers::errors::FilterError;
-use telers::{Filter, FilterResult, Request};
+use telers::{Filter, FilterResult, Request, errors::FilterError};
 use tokio::time::Instant;
 
 #[derive(Debug, Clone)]
@@ -33,7 +32,9 @@ pub struct CommandFilter {
 impl CommandFilter {
     #[inline]
     pub fn new(regex: &'static Regex) -> Self {
-        Self { regex }
+        Self {
+            regex,
+        }
     }
 }
 
@@ -55,8 +56,10 @@ where
             let text = match request
                 .update
                 .message()
-                .and_then(|m| m.html_text().or_else(|| m.html_caption()))
-            {
+                .and_then(|m| {
+                    m.html_text()
+                        .or_else(|| m.html_caption())
+                }) {
                 Some(t) => t,
                 None => return Ok(false),
             };
@@ -72,14 +75,26 @@ where
 
             let mut groups: SmallVec<(&'static str, Box<str>), 4> = SmallVec::new();
 
-            for name in regex.capture_names().flatten() {
+            for name in regex
+                .capture_names()
+                .flatten()
+            {
                 if let Some(m) = caps.name(name) {
                     tracing::debug!("Match found: {} = {}", name, m.as_str());
-                    groups.push((name, m.as_str().to_owned().into()));
+                    groups.push((
+                        name,
+                        m.as_str()
+                            .to_owned()
+                            .into(),
+                    ));
                 }
             }
 
-            request.extensions.insert(ParsedCommand { groups });
+            request
+                .extensions
+                .insert(ParsedCommand {
+                    groups,
+                });
 
             let duration = start.elapsed();
 

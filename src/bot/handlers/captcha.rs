@@ -1,19 +1,28 @@
-use crate::bot::enums::tg_emoji::Emoji;
-use crate::bot::keyboards::{captcha_keyboard, repeat_reg_keyboard};
-use crate::bot::libs::iris_api::{IrisAPI, IrisApiError};
-use crate::bot::utils::chat::{ADMIN_CHAT_ID, GARANT_CHAT_ID, PR_CHAT_ID};
-use crate::bot::utils::datetime::get_current_datetime;
-use crate::bot::utils::user::get_user_mention;
-use crate::database::repo::captcha_repo::CaptchaRepo;
 use chrono::{Duration, TimeZone, Utc};
 use chrono_tz::Europe::Moscow;
 use sea_orm::DatabaseConnection;
-use telers::methods::{
-    ApproveChatJoinRequest, BanChatMember, DeclineChatJoinRequest, GetChat, GetUserGifts,
-    SendMessage,
+use telers::{
+    Bot, Extension,
+    methods::{
+        ApproveChatJoinRequest, BanChatMember, DeclineChatJoinRequest, GetChat, GetUserGifts,
+        SendMessage,
+    },
+    types::{ChatJoinRequest, ChatMemberUpdated, LinkPreviewOptions, OwnedGift},
 };
-use telers::types::{ChatJoinRequest, ChatMemberUpdated, LinkPreviewOptions, OwnedGift};
-use telers::{Bot, Extension};
+
+use crate::{
+    bot::{
+        enums::tg_emoji::Emoji,
+        keyboards::{captcha_keyboard, repeat_reg_keyboard},
+        libs::iris_api::{IrisAPI, IrisApiError},
+        utils::{
+            chat::{ADMIN_CHAT_ID, GARANT_CHAT_ID, PR_CHAT_ID},
+            datetime::get_current_datetime,
+            user::UserMention,
+        },
+    },
+    database::repo::captcha_repo::CaptchaRepo,
+};
 
 pub async fn captcha_chat_join_request_handler(
     bot: Bot,
@@ -29,7 +38,9 @@ pub async fn captcha_chat_join_request_handler(
 
     let captcha_repo = CaptchaRepo::new(db.clone());
 
-    let captcha_user = captcha_repo.get(chat_id, user_id).await?;
+    let captcha_user = captcha_repo
+        .get(chat_id, user_id)
+        .await?;
 
     if captcha_user.is_some() {
         bot.send(ApproveChatJoinRequest::new(chat_id, user_id))
@@ -45,7 +56,10 @@ pub async fn captcha_chat_join_request_handler(
 
         let repo = CaptchaRepo::new(db_clone);
 
-        match repo.get(chat_id, user_id).await {
+        match repo
+            .get(chat_id, user_id)
+            .await
+        {
             Ok(Some(_)) => {}
             Ok(None) => {
                 let _ = bot_clone
@@ -53,8 +67,12 @@ pub async fn captcha_chat_join_request_handler(
                     .await;
                 let _ = bot_clone
                     .send(
-                        BanChatMember::new(chat_id, user_id)
-                            .until_date(get_current_datetime().and_utc().timestamp() + 300),
+                        BanChatMember::new(chat_id, user_id).until_date(
+                            get_current_datetime()
+                                .and_utc()
+                                .timestamp()
+                                + 300,
+                        ),
                     )
                     .await;
             }
@@ -63,7 +81,9 @@ pub async fn captcha_chat_join_request_handler(
     });
 
     if chat_id == GARANT_CHAT_ID {
-        let gifts = bot.send(GetUserGifts::new(user_id)).await?;
+        let gifts = bot
+            .send(GetUserGifts::new(user_id))
+            .await?;
         let mut regular_count: i16 = 0;
         let mut nft_count: i16 = 0;
 
@@ -92,21 +112,34 @@ pub async fn captcha_chat_join_request_handler(
                 return Ok(());
             }
 
-            captcha_repo.insert(chat_id, user_id).await?;
+            captcha_repo
+                .insert(chat_id, user_id)
+                .await?;
         } else {
             let iris_api = IrisAPI::new();
 
-            match iris_api.get_user_reg(user_id).await {
+            match iris_api
+                .get_user_reg(user_id)
+                .await
+            {
                 Ok(user_reg) => {
-                    let reg_timestamp = user_reg["result"].as_i64().unwrap_or(0);
+                    let reg_timestamp = user_reg["result"]
+                        .as_i64()
+                        .unwrap_or(0);
                     let now_msk = Utc::now().with_timezone(&Moscow);
                     let year_ago_msk = now_msk - Duration::days(365);
 
                     let reg_timestamp_seconds = reg_timestamp / 1000;
-                    let reg_date_msk = match Moscow.timestamp_opt(reg_timestamp_seconds, 0).single() {
+                    let reg_date_msk = match Moscow
+                        .timestamp_opt(reg_timestamp_seconds, 0)
+                        .single()
+                    {
                         Some(dt) => dt,
                         None => {
-                            tracing::error!("Iris API вернул некорректный timestamp: {}", reg_timestamp);
+                            tracing::error!(
+                                "Iris API вернул некорректный timestamp: {}",
+                                reg_timestamp
+                            );
                             return Ok(());
                         }
                     };
@@ -122,7 +155,9 @@ pub async fn captcha_chat_join_request_handler(
                         let _ = bot
                             .send(SendMessage::new(user_id, "✅ Заявка в чат принята!"))
                             .await;
-                        captcha_repo.insert(chat_id, user_id).await?;
+                        captcha_repo
+                            .insert(chat_id, user_id)
+                            .await?;
                     } else {
                         if bot
                             .send(DeclineChatJoinRequest::new(chat_id, user_id))
@@ -131,13 +166,19 @@ pub async fn captcha_chat_join_request_handler(
                         {
                             return Ok(());
                         }
-                        let _ = bot.send(SendMessage::new(
-                            user_id,
-                            "❌ Заявка в чат отклонена, вы не проходите по минимальной дате регистрации в Iris",
-                        )).await;
+                        let _ = bot
+                            .send(SendMessage::new(
+                                user_id,
+                                "❌ Заявка в чат отклонена, вы не проходите по минимальной дате \
+                                 регистрации в Iris",
+                            ))
+                            .await;
                     }
                 }
-                Err(IrisApiError::Api { code: 403, .. }) => {
+                Err(IrisApiError::Api {
+                    code: 403,
+                    ..
+                }) => {
                     let _ = bot
                         .send(
                             SendMessage::new(
@@ -160,15 +201,13 @@ pub async fn captcha_chat_join_request_handler(
             }
         }
     } else {
-        let user = event.from;
-        let user_mention =
-            get_user_mention(user.id, user.username.as_deref(), user.first_name.parse()?);
+        let user_mention = event.from.mention();
         bot.send(
             SendMessage::new(
                 user_id,
                 format!(
-                    "{} {}\n\
-                    Пройди проверку на бота, нажав кнопку, соответствующую эмодзи 'Курицы' ниже {}",
+                    "{} {}\nПройди проверку на бота, нажав кнопку, соответствующую эмодзи \
+                     'Курицы' ниже {}",
                     Emoji::Bot,
                     user_mention,
                     Emoji::ArrowDown
@@ -188,7 +227,9 @@ pub async fn chat_member_updated_handler(
     event: ChatMemberUpdated,
     Extension(db): Extension<DatabaseConnection>,
 ) -> anyhow::Result<()> {
-    let user = event.new_chat_member.user();
+    let user = event
+        .new_chat_member
+        .user();
     let chat_id = event.chat.id();
 
     if chat_id == PR_CHAT_ID {
@@ -197,22 +238,23 @@ pub async fn chat_member_updated_handler(
 
     let captcha_repo = CaptchaRepo::new(db);
 
-    let is_captcha = captcha_repo.get(chat_id, user.id).await?;
+    let is_captcha = captcha_repo
+        .get(chat_id, user.id)
+        .await?;
 
     if is_captcha.is_none() {
-        let chat = bot.send(GetChat::new(chat_id)).await?;
+        let chat = bot
+            .send(GetChat::new(chat_id))
+            .await?;
 
-        if !chat.join_by_request().unwrap_or(false) {
+        if !chat
+            .join_by_request()
+            .unwrap_or(false)
+        {
             return Ok(());
         }
 
         let until_date = (Utc::now() + Duration::minutes(5)).timestamp();
-        let user_mention = get_user_mention(
-            user.id,
-            user.username.as_deref(),
-            user.first_name.to_string(),
-        );
-
         bot.send(BanChatMember::new(chat_id, user.id).until_date(until_date))
             .await?;
 
@@ -220,12 +262,14 @@ pub async fn chat_member_updated_handler(
             SendMessage::new(
                 ADMIN_CHAT_ID,
                 format!(
-                    "{} {} зашел в чат в обход системы проверок, исключаю...\n\
-            {} Чат: {}",
+                    "{} {} зашел в чат в обход системы проверок, исключаю...\n{} Чат: {}",
                     Emoji::Warning,
-                    user_mention,
+                    user.mention(),
                     Emoji::Balloon,
-                    event.chat.title().unwrap_or_default()
+                    event
+                        .chat
+                        .title()
+                        .unwrap_or_default()
                 ),
             )
             .parse_mode("HTML")

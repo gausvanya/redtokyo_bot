@@ -1,10 +1,9 @@
-use crate::database::models::{scam_base, user};
-use sea_orm::QueryFilter;
-use sea_orm::sea_query::OnConflict;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, DeleteResult, EntityTrait,
-    IntoActiveModel, NotSet, Set,
+    IntoActiveModel, NotSet, QueryFilter, Set, sea_query::OnConflict,
 };
+
+use crate::database::models::{scam_base, user};
 
 pub struct ScamBaseRepo {
     pub db: DatabaseConnection,
@@ -12,7 +11,9 @@ pub struct ScamBaseRepo {
 
 impl ScamBaseRepo {
     pub fn new(db: DatabaseConnection) -> Self {
-        ScamBaseRepo { db }
+        ScamBaseRepo {
+            db,
+        }
     }
 
     #[inline]
@@ -32,12 +33,17 @@ impl ScamBaseRepo {
         &self,
         scam_base_model: scam_base::ActiveModel,
     ) -> Result<scam_base::Model, DbErr> {
-        scam_base_model.update(&self.db).await
+        scam_base_model
+            .update(&self.db)
+            .await
     }
 
     #[inline]
     pub async fn delete(&self, scam_base: scam_base::Model) -> Result<DeleteResult, DbErr> {
-        scam_base.into_active_model().delete(&self.db).await
+        scam_base
+            .into_active_model()
+            .delete(&self.db)
+            .await
     }
 
     #[inline]

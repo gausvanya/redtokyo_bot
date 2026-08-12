@@ -1,12 +1,21 @@
-use crate::bot::filters::regexes::RE_INVITE;
-use crate::bot::utils::chat::{ALLOWED_BOT_IDS, ALLOWED_URLS, PR_CHAT_ID};
-use crate::bot::utils::user::get_user_info;
-use crate::database::cache::RAID_CACHE;
 use regex::Regex;
-use telers::Bot;
-use telers::client::Session;
-use telers::methods::GetChatMember;
-use telers::types::{ChatMember, Message};
+use telers::{
+    Bot,
+    client::Session,
+    methods::GetChatMember,
+    types::{ChatMember, Message},
+};
+
+use crate::{
+    bot::{
+        filters::regexes::RE_INVITE,
+        utils::{
+            chat::{ALLOWED_BOT_IDS, ALLOWED_URLS, PR_CHAT_ID},
+            user::get_user_info,
+        },
+    },
+    database::cache::RAID_CACHE,
+};
 
 pub struct AntispamFilter;
 
@@ -18,7 +27,10 @@ impl AntispamFilter {
             return false;
         }
 
-        let text = msg.text().or(msg.caption()).unwrap_or("");
+        let text = msg
+            .text()
+            .or(msg.caption())
+            .unwrap_or("");
         let re = RE_INVITE.get_or_init(|| {
             Regex::new(r"(?:t\.me|telegram\.(?:org|me|dog))/(?:\+\w+|gram_piarbot\?start=check_)")
                 .unwrap()
@@ -45,7 +57,9 @@ impl AntispamFilter {
             return true;
         }
 
-        let member_result = bot.send(GetChatMember::new(msg.chat().id(), user.id)).await;
+        let member_result = bot
+            .send(GetChatMember::new(msg.chat().id(), user.id))
+            .await;
 
         match member_result {
             Ok(ChatMember::Left(_)) | Ok(ChatMember::Kicked(_)) => false,
@@ -55,7 +69,10 @@ impl AntispamFilter {
     }
 
     async fn is_raid_safe(&self, msg: &Message) -> bool {
-        if msg.media_group_id().is_some() {
+        if msg
+            .media_group_id()
+            .is_some()
+        {
             return false;
         }
 
@@ -71,11 +88,16 @@ impl AntispamFilter {
 
         let now = msg.date();
 
-        let mut timestamps = RAID_CACHE.get(&key).await.unwrap_or_else(Vec::new);
+        let mut timestamps = RAID_CACHE
+            .get(&key)
+            .await
+            .unwrap_or_else(Vec::new);
         timestamps.push(now);
         timestamps.retain(|&ts| ts > (now - 8));
 
-        RAID_CACHE.insert(key, timestamps.clone()).await;
+        RAID_CACHE
+            .insert(key, timestamps.clone())
+            .await;
 
         timestamps.len() > 10
     }
@@ -91,15 +113,24 @@ impl AntispamFilter {
         if self.is_spam_link(msg) {
             return (false, "spam", vec![msg.message_id()]);
         }
-        if self.is_raid_safe(msg).await {
+        if self
+            .is_raid_safe(msg)
+            .await
+        {
             let user_id = get_user_info(msg).0;
             let chat_id = msg.chat().id();
             let key = format!("{}:{}", chat_id, user_id);
-            let timestamps = RAID_CACHE.get(&key).await.unwrap_or_else(Vec::new);
+            let timestamps = RAID_CACHE
+                .get(&key)
+                .await
+                .unwrap_or_else(Vec::new);
 
             return (false, "raid", timestamps);
         }
-        if !self.check_bot_access(bot, msg).await {
+        if !self
+            .check_bot_access(bot, msg)
+            .await
+        {
             return (false, "bot", vec![msg.message_id()]);
         }
         (true, "null", Vec::new())

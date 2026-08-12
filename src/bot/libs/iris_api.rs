@@ -1,13 +1,12 @@
-use crate::config::get_config;
-use crate::database::cache::ORDER_BOOK_CACHE;
+use std::{collections::HashMap, sync::LazyLock};
+
 use reqwest::{
     Client,
     header::{ACCEPT, HeaderMap, HeaderValue, USER_AGENT},
 };
-use serde::Deserialize;
-use serde::de::DeserializeOwned;
-use std::collections::HashMap;
-use std::sync::LazyLock;
+use serde::{Deserialize, de::DeserializeOwned};
+
+use crate::{config::get_config, database::cache::ORDER_BOOK_CACHE};
 
 pub struct IrisAPI {
     api_id: i64,
@@ -34,7 +33,10 @@ pub enum IrisApiError {
     Request(#[from] reqwest::Error),
 
     #[error("ошибка API (код {code}): {description}")]
-    Api { code: i32, description: String },
+    Api {
+        code: i32,
+        description: String,
+    },
 
     #[error("неожиданный HTTP статус {0}: {1}")]
     BadStatus(reqwest::StatusCode, String),
@@ -70,11 +72,17 @@ pub enum DuelRateError {
 
 impl OrderBookResponse {
     pub fn best_buy(&self) -> Option<f64> {
-        self.result.buy.first().map(|e| e.price)
+        self.result
+            .buy
+            .first()
+            .map(|e| e.price)
     }
 
     pub fn best_sell(&self) -> Option<f64> {
-        self.result.sell.first().map(|e| e.price)
+        self.result
+            .sell
+            .first()
+            .map(|e| e.price)
     }
 
     pub fn mid_price(&self) -> Option<f64> {
@@ -100,7 +108,9 @@ impl IrisAPI {
     pub fn new() -> Self {
         let cfg = get_config();
         let api_id = cfg.iris_api_id;
-        let api_token = cfg.iris_api_token.clone();
+        let api_token = cfg
+            .iris_api_token
+            .clone();
 
         let mut headers = HeaderMap::new();
         headers.insert(ACCEPT, HeaderValue::from_static("application/json"));
@@ -125,19 +135,32 @@ impl IrisAPI {
             self.base_url, self.api_id, self.api_token, self.api_version, method
         );
 
-        let response = self.client.get(url).query(&params).send().await?;
+        let response = self
+            .client
+            .get(url)
+            .query(&params)
+            .send()
+            .await?;
 
         let status = response.status();
 
         if status.is_success() {
-            response.json::<T>().await.map_err(IrisApiError::Request)
+            response
+                .json::<T>()
+                .await
+                .map_err(IrisApiError::Request)
         } else {
-            let body_text = response.text().await.unwrap_or_default();
+            let body_text = response
+                .text()
+                .await
+                .unwrap_or_default();
 
             if let Ok(err_payload) = serde_json::from_str::<ApiErrorResponse>(&body_text) {
                 Err(IrisApiError::Api {
                     code: err_payload.error.code,
-                    description: err_payload.error.description,
+                    description: err_payload
+                        .error
+                        .description,
                 })
             } else {
                 Err(IrisApiError::BadStatus(status, body_text))
@@ -149,20 +172,28 @@ impl IrisAPI {
         let mut params = HashMap::new();
         params.insert("user_id".to_string(), user_id.to_string());
 
-        self.send_request("user_info/reg", params).await
+        self.send_request("user_info/reg", params)
+            .await
     }
 
     pub async fn get_order_book(&self) -> Result<OrderBookResponse, IrisApiError> {
         const CACHE_KEY: &str = "orderbook";
 
-        if let Some(cached_response) = ORDER_BOOK_CACHE.get(CACHE_KEY).await {
+        if let Some(cached_response) = ORDER_BOOK_CACHE
+            .get(CACHE_KEY)
+            .await
+        {
             return Ok(cached_response);
         }
 
         let params = HashMap::new();
-        let response: OrderBookResponse = self.send_request("trade/orderbook", params).await?;
+        let response: OrderBookResponse = self
+            .send_request("trade/orderbook", params)
+            .await?;
 
-        ORDER_BOOK_CACHE.insert(CACHE_KEY, response.clone()).await;
+        ORDER_BOOK_CACHE
+            .insert(CACHE_KEY, response.clone())
+            .await;
 
         Ok(response)
     }

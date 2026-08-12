@@ -1,15 +1,24 @@
-use crate::bot::enums::tg_emoji::Emoji;
-use crate::bot::filters::command::ParsedCommand;
-use crate::bot::keyboards::{duel_chat_keyboard, duel_unmute_keyboard};
-use crate::bot::methods::message::MessageMethods;
-use crate::bot::utils::chat::{ADMIN_CHAT_ID, DUEL_CHAT_ID, muted_permissions};
-use crate::bot::utils::parse::parse_amount;
-use crate::bot::utils::trade::get_minimum_duel_rate;
-use crate::bot::utils::user::{get_user_info, get_user_mention};
-use crate::database::cache::WARN_CACHE;
-use telers::methods::RestrictChatMember;
-use telers::types::{Message, ReplyParameters};
-use telers::{Bot, Extension};
+use telers::{
+    Bot, Extension,
+    methods::RestrictChatMember,
+    types::{Message, ReplyParameters},
+};
+
+use crate::{
+    bot::{
+        enums::tg_emoji::Emoji,
+        filters::command::ParsedCommand,
+        keyboards::{duel_chat_keyboard, duel_unmute_keyboard},
+        methods::message::MessageMethods,
+        utils::{
+            chat::{ADMIN_CHAT_ID, DUEL_CHAT_ID, muted_permissions},
+            parse::parse_amount,
+            trade::get_minimum_duel_rate,
+            user::{get_user_info, get_user_mention},
+        },
+    },
+    database::cache::WARN_CACHE,
+};
 
 pub async fn duel_command_handler(
     bot: Bot,
@@ -23,7 +32,9 @@ pub async fn duel_command_handler(
     let chat_id = msg.chat().id();
     let (user_id, username, full_name) = get_user_info(&msg);
 
-    let raw_amount = args.get("amount").unwrap_or("0");
+    let raw_amount = args
+        .get("amount")
+        .unwrap_or("0");
     let amount = parse_amount(raw_amount);
 
     if amount == -1 {
@@ -36,11 +47,19 @@ pub async fn duel_command_handler(
     if (0..min_bet).contains(&amount) {
         let key = format!("warns_low_bet:{chat_id}:{user_id}");
 
-        let warns = WARN_CACHE.get(&key).await.unwrap_or(0) + 1;
-        WARN_CACHE.insert(key.clone(), warns).await;
+        let warns = WARN_CACHE
+            .get(&key)
+            .await
+            .unwrap_or(0)
+            + 1;
+        WARN_CACHE
+            .insert(key.clone(), warns)
+            .await;
 
         if warns >= 2 {
-            WARN_CACHE.remove(key.as_str()).await;
+            WARN_CACHE
+                .remove(key.as_str())
+                .await;
             let until_date = (chrono::Utc::now() + chrono::Duration::minutes(5)).timestamp();
             let permissions = muted_permissions();
 
@@ -55,18 +74,28 @@ pub async fn duel_command_handler(
             let user_mention =
                 get_user_mention(user_id, username.as_deref(), full_name.to_string());
 
-            let msg_sent = bot.send(
-                MessageMethods::send(&msg).text(
-                    format!("🤐 {user_mention}\nВы получили мут на 5 минут за повторную попытку игры на сумму менее {min_bet} голд.")
-                ).reply_markup(duel_unmute_keyboard(msg.chat().id(), user_id, min_bet, None))
-            ).await?;
+            let msg_sent = bot
+                .send(
+                    MessageMethods::send(&msg)
+                        .text(format!(
+                            "🤐 {user_mention}\nВы получили мут на 5 минут за повторную попытку \
+                             игры на сумму менее {min_bet} голд."
+                        ))
+                        .reply_markup(duel_unmute_keyboard(
+                            msg.chat().id(),
+                            user_id,
+                            min_bet,
+                            None,
+                        )),
+                )
+                .await?;
 
             bot.send(
                 MessageMethods::send(&msg)
                     .chat_id(ADMIN_CHAT_ID)
                     .text(format!(
-                        "ℹ️ {user_mention} лишен права слова в чате\n\
-                    Причина: неверная ставка в играх"
+                        "ℹ️ {user_mention} лишен права слова в чате\nПричина: неверная ставка в \
+                         играх"
                     ))
                     .reply_markup(duel_unmute_keyboard(
                         msg.chat().id(),
@@ -82,13 +111,15 @@ pub async fn duel_command_handler(
             )
             .await?;
 
-            WARN_CACHE.invalidate(&key).await;
+            WARN_CACHE
+                .invalidate(&key)
+                .await;
         } else {
             let message_text = format!(
-                "{} внимание!\n\n\
-                В нашем чате разрешены игры только от {} голд, другие варианты игр будут наказываться при повторной попытке сыграть.\n\n\
-                {} Подробнее в <code>Заметка 2</code> и <code>Заметка 3</code>\n\n\
-                Игры на меньшие суммы по кнопке ниже {}",
+                "{} внимание!\n\nВ нашем чате разрешены игры только от {} голд, другие варианты \
+                 игр будут наказываться при повторной попытке сыграть.\n\n{} Подробнее в \
+                 <code>Заметка 2</code> и <code>Заметка 3</code>\n\nИгры на меньшие суммы по \
+                 кнопке ниже {}",
                 Emoji::Bangbang,
                 min_bet,
                 Emoji::Balloon,

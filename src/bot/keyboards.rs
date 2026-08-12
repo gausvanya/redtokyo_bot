@@ -100,12 +100,7 @@ pub fn antispam_keyboard(
         ],
         vec![
             InlineKeyboardButton::new("Забанить")
-                .callback_data(format!(
-                    "ban:{}:{:?}:{}",
-                    chat_id,
-                    message_id.unwrap_or(0),
-                    user_id
-                ))
+                .callback_data(format!("ban:{}:{:?}:{}", chat_id, message_id.unwrap_or(0), user_id))
                 .icon_custom_emoji_id("5472308992514464048")
                 .style("success"),
         ],

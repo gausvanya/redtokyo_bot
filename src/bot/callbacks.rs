@@ -1,24 +1,33 @@
-use crate::bot::utils::datetime::get_current_datetime;
 use chrono::{Duration, TimeZone, Utc};
 use chrono_tz::Europe::Moscow;
 use sea_orm::DatabaseConnection;
-
-use crate::bot::enums::tg_emoji::Emoji;
-use crate::bot::filters::command::ParsedCommand;
-use crate::bot::libs::iris_api::{IrisAPI, IrisApiError};
-use crate::bot::methods::message::MessageMethods;
-use crate::bot::utils::chat::{full_permissions, ADMIN_IDS};
-use crate::bot::utils::user::get_user_mention;
-use crate::database::cache::SUMMON_CACHE;
-use crate::database::repo::captcha_repo::CaptchaRepo;
-use crate::database::repo::garant_repo::GarantRepo;
-use telers::event::simple::HandlerResult;
-use telers::methods::{
-    AnswerCallbackQuery, ApproveChatJoinRequest, BanChatMember, DeclineChatJoinRequest,
-    DeleteMessages, EditMessageReplyMarkup, GetChatMember, RestrictChatMember,
+use telers::{
+    Bot, Extension,
+    event::simple::HandlerResult,
+    methods::{
+        AnswerCallbackQuery, ApproveChatJoinRequest, BanChatMember, DeclineChatJoinRequest,
+        DeleteMessages, EditMessageReplyMarkup, GetChatMember, RestrictChatMember,
+    },
+    types::{CallbackQuery, ChatMember, ReplyParameters},
 };
-use telers::types::{CallbackQuery, ChatMember, ReplyParameters};
-use telers::{Bot, Extension};
+
+use crate::{
+    bot::{
+        enums::tg_emoji::Emoji,
+        filters::command::ParsedCommand,
+        libs::iris_api::{IrisAPI, IrisApiError},
+        methods::message::MessageMethods,
+        utils::{
+            chat::{ADMIN_IDS, full_permissions},
+            datetime::get_current_datetime,
+            user::get_user_mention,
+        },
+    },
+    database::{
+        cache::SUMMON_CACHE,
+        repo::{captcha_repo::CaptchaRepo, garant_repo::GarantRepo},
+    },
+};
 
 pub async fn captcha_callback_handler(
     bot: Bot,
@@ -27,14 +36,24 @@ pub async fn captcha_callback_handler(
     Extension(args): Extension<ParsedCommand>,
 ) -> anyhow::Result<()> {
     unsafe {
-        let chat_id = args.require("chat_id").parse::<i64>().unwrap_or(0);
-        let user_id = args.require("user_id").parse::<i64>().unwrap_or(0);
+        let chat_id = args
+            .require("chat_id")
+            .parse::<i64>()
+            .unwrap_or(0);
+        let user_id = args
+            .require("user_id")
+            .parse::<i64>()
+            .unwrap_or(0);
         let code = args.require("code");
-        let message = call.message.unwrap_unchecked();
+        let message = call
+            .message
+            .unwrap_unchecked();
 
         if code == "3" {
             let captcha_repo = CaptchaRepo::new(db.clone());
-            let _ = captcha_repo.insert(chat_id, user_id).await;
+            let _ = captcha_repo
+                .insert(chat_id, user_id)
+                .await;
 
             bot.send(
                 MessageMethods::edit(&message)
@@ -55,8 +74,12 @@ pub async fn captcha_callback_handler(
             bot.send(DeclineChatJoinRequest::new(chat_id, user_id))
                 .await?;
             bot.send(
-                BanChatMember::new(chat_id, user_id)
-                    .until_date(get_current_datetime().and_utc().timestamp() + 300),
+                BanChatMember::new(chat_id, user_id).until_date(
+                    get_current_datetime()
+                        .and_utc()
+                        .timestamp()
+                        + 300,
+                ),
             )
             .await?;
         }
@@ -73,10 +96,15 @@ pub async fn garant_call_callback_handler(
     unsafe {
         let summon_id = args.require("summon_id");
         let user_id = call.from.id;
-        let message = call.message.unwrap_unchecked();
+        let message = call
+            .message
+            .unwrap_unchecked();
         let chat_id = message.chat().id();
 
-        let cached_data = match SUMMON_CACHE.get(summon_id).await {
+        let cached_data = match SUMMON_CACHE
+            .get(summon_id)
+            .await
+        {
             Some(d) => d,
             None => {
                 bot.send(
@@ -101,21 +129,31 @@ pub async fn garant_call_callback_handler(
         let is_admin = ADMIN_IDS.contains(&user_id);
 
         let garant_repo = GarantRepo::new(db.clone());
-        let is_garant = garant_repo.get(user_id).await.is_ok();
+        let is_garant = garant_repo
+            .get(user_id)
+            .await
+            .is_ok();
 
         if !is_author && !is_admin && !is_garant {
             bot.send(
                 AnswerCallbackQuery::new(call.id)
                     .text(
-                        "❌ Только автор созыва, гаранты и администрация могут удалить эти сообщения!",
+                        "❌ Только автор созыва, гаранты и администрация могут удалить эти \
+                         сообщения!",
                     )
                     .show_alert(true),
-            ).await?;
+            )
+            .await?;
             return Ok(());
         }
 
-        bot.send(DeleteMessages::new(chat_id, cached_data.msg_ids.clone()))
-            .await?;
+        bot.send(DeleteMessages::new(
+            chat_id,
+            cached_data
+                .msg_ids
+                .clone(),
+        ))
+        .await?;
         Ok(())
     }
 }
@@ -127,15 +165,28 @@ pub async fn repeat_reg_callback_handler(
     Extension(args): Extension<ParsedCommand>,
 ) -> anyhow::Result<()> {
     unsafe {
-        let chat_id = args.require("chat_id").parse::<i64>().unwrap_or(0);
-        let user_id = args.require("user_id").parse::<i64>().unwrap_or(0);
-        let message = call.message.unwrap_unchecked();
+        let chat_id = args
+            .require("chat_id")
+            .parse::<i64>()
+            .unwrap_or(0);
+        let user_id = args
+            .require("user_id")
+            .parse::<i64>()
+            .unwrap_or(0);
+        let message = call
+            .message
+            .unwrap_unchecked();
 
         let iris_api = IrisAPI::new();
 
-        match iris_api.get_user_reg(user_id).await {
+        match iris_api
+            .get_user_reg(user_id)
+            .await
+        {
             Ok(user_reg) => {
-                let reg_timestamp = user_reg["result"].as_i64().unwrap_or(0);
+                let reg_timestamp = user_reg["result"]
+                    .as_i64()
+                    .unwrap_or(0);
                 let reg_timestamp_seconds = reg_timestamp / 1000;
 
                 let now_msk = Utc::now().with_timezone(&Moscow);
@@ -150,7 +201,9 @@ pub async fn repeat_reg_callback_handler(
                         .await?;
 
                     let captcha_repo = CaptchaRepo::new(db);
-                    captcha_repo.insert(chat_id, user_id).await?;
+                    captcha_repo
+                        .insert(chat_id, user_id)
+                        .await?;
 
                     bot.send(
                         MessageMethods::edit(&message)
@@ -164,12 +217,19 @@ pub async fn repeat_reg_callback_handler(
 
                     bot.send(
                         MessageMethods::edit(&message)
-                            .text("❌ Заявка в чат отклонена, вы не проходите по минимальной дате регистрации в Iris")
-                            .message_id(message.message_id())
-                    ).await?;
+                            .text(
+                                "❌ Заявка в чат отклонена, вы не проходите по минимальной дате \
+                                 регистрации в Iris",
+                            )
+                            .message_id(message.message_id()),
+                    )
+                    .await?;
                 }
             }
-            Err(IrisApiError::Api { code: 403, .. }) => {
+            Err(IrisApiError::Api {
+                code: 403,
+                ..
+            }) => {
                 bot.send(
                     AnswerCallbackQuery::new(call.id)
                         .text("ℹ️ Вы не выдали боту права на просмотр даты регистрации в Iris")
@@ -192,10 +252,21 @@ pub async fn unmute_callback_handler(
     Extension(args): Extension<ParsedCommand>,
 ) -> HandlerResult {
     unsafe {
-        let chat_id = args.require("chat_id").parse::<i64>().unwrap_or(0);
-        let user_id = args.require("user_id").parse::<i64>().unwrap_or(0);
-        let message_id = args.require("message_id").parse::<i64>().unwrap_or(0);
-        let message = call.message.unwrap_unchecked();
+        let chat_id = args
+            .require("chat_id")
+            .parse::<i64>()
+            .unwrap_or(0);
+        let user_id = args
+            .require("user_id")
+            .parse::<i64>()
+            .unwrap_or(0);
+        let message_id = args
+            .require("message_id")
+            .parse::<i64>()
+            .unwrap_or(0);
+        let message = call
+            .message
+            .unwrap_unchecked();
 
         if !ADMIN_IDS.contains(&call.from.id) {
             bot.send(
@@ -207,7 +278,9 @@ pub async fn unmute_callback_handler(
             return Ok(());
         }
 
-        let member = bot.send(GetChatMember::new(chat_id, user_id)).await?;
+        let member = bot
+            .send(GetChatMember::new(chat_id, user_id))
+            .await?;
 
         match member {
             ChatMember::Restricted(_) => {
@@ -216,12 +289,21 @@ pub async fn unmute_callback_handler(
                 bot.send(RestrictChatMember::new(chat_id, user_id, permissions))
                     .await?;
 
-                let user_mention =
-                    get_user_mention(member.id(), member.username(), member.first_name().parse()?);
+                let user_mention = get_user_mention(
+                    member.id(),
+                    member.username(),
+                    member
+                        .first_name()
+                        .parse()?,
+                );
                 let admin_mention = get_user_mention(
                     call.from.id,
-                    call.from.username.as_deref(),
-                    call.from.first_name.parse()?,
+                    call.from
+                        .username
+                        .as_deref(),
+                    call.from
+                        .first_name
+                        .parse()?,
                 );
                 let text = format!(
                     "{} C {} сняли ограничения\n{} Модератор: {}",
@@ -239,7 +321,8 @@ pub async fn unmute_callback_handler(
                     )
                     .await?;
                 } else {
-                    bot.send(MessageMethods::send(&message).text(text)).await?;
+                    bot.send(MessageMethods::send(&message).text(text))
+                        .await?;
                 }
             }
             _ => {
@@ -261,10 +344,21 @@ pub async fn ban_callback_handler(
     Extension(args): Extension<ParsedCommand>,
 ) -> HandlerResult {
     unsafe {
-        let chat_id = args.require("chat_id").parse::<i64>().unwrap_or(0);
-        let user_id = args.require("user_id").parse::<i64>().unwrap_or(0);
-        let message_id = args.require("message_id").parse::<i64>().unwrap_or(0);
-        let message = call.message.unwrap_unchecked();
+        let chat_id = args
+            .require("chat_id")
+            .parse::<i64>()
+            .unwrap_or(0);
+        let user_id = args
+            .require("user_id")
+            .parse::<i64>()
+            .unwrap_or(0);
+        let message_id = args
+            .require("message_id")
+            .parse::<i64>()
+            .unwrap_or(0);
+        let message = call
+            .message
+            .unwrap_unchecked();
 
         if !ADMIN_IDS.contains(&call.from.id) {
             bot.send(
@@ -276,7 +370,9 @@ pub async fn ban_callback_handler(
             return Ok(());
         }
 
-        let member = bot.send(GetChatMember::new(chat_id, user_id)).await?;
+        let member = bot
+            .send(GetChatMember::new(chat_id, user_id))
+            .await?;
 
         match member {
             ChatMember::Kicked(_) => {
@@ -288,14 +384,24 @@ pub async fn ban_callback_handler(
                 .await?;
             }
             _ => {
-                bot.send(BanChatMember::new(chat_id, user_id)).await?;
+                bot.send(BanChatMember::new(chat_id, user_id))
+                    .await?;
 
-                let user_mention =
-                    get_user_mention(member.id(), member.username(), member.first_name().parse()?);
+                let user_mention = get_user_mention(
+                    member.id(),
+                    member.username(),
+                    member
+                        .first_name()
+                        .parse()?,
+                );
                 let admin_mention = get_user_mention(
                     call.from.id,
-                    call.from.username.as_deref(),
-                    call.from.first_name.parse()?,
+                    call.from
+                        .username
+                        .as_deref(),
+                    call.from
+                        .first_name
+                        .parse()?,
                 );
                 let text = format!(
                     "{} Пользователь {} исключен из чата\n{} Модератор: {}",
@@ -313,7 +419,8 @@ pub async fn ban_callback_handler(
                     )
                     .await?;
                 } else {
-                    bot.send(MessageMethods::send(&message).text(text)).await?;
+                    bot.send(MessageMethods::send(&message).text(text))
+                        .await?;
                 }
             }
         }

@@ -1,5 +1,6 @@
-use regex::Regex;
 use std::sync::OnceLock;
+
+use regex::Regex;
 
 const PREFIX: &str = r#"(?:[.!/]\s?|сап\s?)?"#;
 // const USER_PATTERN: &str = r#"(?:\s+(?:https?://(?:t\.me|telegram\.(?:org|dog))/|@|tg://(?:user\?id=|openmessage\?user_id=|resolve\?domain=)|<a\s+href=["']tg://user\?id=)?(?P<user>-\d+|\d+|[a-zA-Z0-9_]{5,32})(?:["']?>[^<]*</a>)?)?"#;
@@ -41,10 +42,7 @@ pub static RE_INVITE: OnceLock<Regex> = OnceLock::new();
 // COMMANDS REGEX
 #[inline]
 pub fn re_ping() -> &'static Regex {
-    regex!(
-        RE_PING,
-        &format!(r#"(?i)^{PREFIX}(?P<command>пинг|ping)(?:\n[\s\S]*)?$"#)
-    )
+    regex!(RE_PING, &format!(r#"(?i)^{PREFIX}(?P<command>пинг|ping)(?:\n[\s\S]*)?$"#))
 }
 
 #[inline]
@@ -81,10 +79,7 @@ pub fn re_call_garants() -> &'static Regex {
 
 #[inline]
 pub fn re_list_garants() -> &'static Regex {
-    regex!(
-        RE_LIST_GARANTS,
-        &format!(r#"(?i)^{PREFIX}(?:кто\s+)?гаранты(?:\n[\s\S]*)?$"#)
-    )
+    regex!(RE_LIST_GARANTS, &format!(r#"(?i)^{PREFIX}(?:кто\s+)?гаранты(?:\n[\s\S]*)?$"#))
 }
 
 #[inline]
@@ -97,10 +92,7 @@ pub fn re_set_warn() -> &'static Regex {
 
 #[inline]
 pub fn re_remove_warn() -> &'static Regex {
-    regex!(
-        RE_REMOVE_WARN,
-        &format!(r#"(?i)^{PREFIX}-уст(?:\s+{USER_PATTERN})?(?:\n[\s\S]*)?$"#)
-    )
+    regex!(RE_REMOVE_WARN, &format!(r#"(?i)^{PREFIX}-уст(?:\s+{USER_PATTERN})?(?:\n[\s\S]*)?$"#))
 }
 
 #[inline]
@@ -133,26 +125,17 @@ pub fn re_remove_scam() -> &'static Regex {
 
 #[inline]
 pub fn re_reason_scam() -> &'static Regex {
-    regex!(
-        RE_REASON_SCAM,
-        &format!(r#"(?i)^{PREFIX}причина(?:\s+{USER_PATTERN})?(?:\n[\s\S]*)?$"#)
-    )
+    regex!(RE_REASON_SCAM, &format!(r#"(?i)^{PREFIX}причина(?:\s+{USER_PATTERN})?(?:\n[\s\S]*)?$"#))
 }
 
 #[inline]
 pub fn re_file_id() -> &'static Regex {
-    regex!(
-        RE_FILE_ID,
-        &format!(r#"(?i)^{PREFIX}(?P<command>файл ид)(?:\n[\s\S]*)?$"#)
-    )
+    regex!(RE_FILE_ID, &format!(r#"(?i)^{PREFIX}(?P<command>файл ид)(?:\n[\s\S]*)?$"#))
 }
 
 #[inline]
 pub fn re_minimal_rate() -> &'static Regex {
-    regex!(
-        RE_MINIMAL_RATE,
-        &format!(r#"(?i)^{PREFIX}(?P<command>мин ставка)(?:\n[\s\S]*)?$"#)
-    )
+    regex!(RE_MINIMAL_RATE, &format!(r#"(?i)^{PREFIX}(?P<command>мин ставка)(?:\n[\s\S]*)?$"#))
 }
 
 #[inline]
@@ -166,10 +149,7 @@ pub fn re_db_update() -> &'static Regex {
 // CALLBACK REGEX
 #[inline]
 pub fn re_callback_captcha() -> &'static Regex {
-    regex!(
-        RE_CALLBACK_CAPTCHA,
-        r"^captcha:(?P<chat_id>-?\d+):(?P<user_id>\d+):(?P<code>\d+)$"
-    )
+    regex!(RE_CALLBACK_CAPTCHA, r"^captcha:(?P<chat_id>-?\d+):(?P<user_id>\d+):(?P<code>\d+)$")
 }
 
 #[inline]
@@ -179,24 +159,15 @@ pub fn re_del_sum() -> &'static Regex {
 
 #[inline]
 pub fn re_repeat_reg() -> &'static Regex {
-    regex!(
-        RE_REPEAT_REG,
-        r"^repeat_reg:(?P<chat_id>-?\d+):(?P<user_id>\d+)$"
-    )
+    regex!(RE_REPEAT_REG, r"^repeat_reg:(?P<chat_id>-?\d+):(?P<user_id>\d+)$")
 }
 
 #[inline]
 pub fn re_unmute() -> &'static Regex {
-    regex!(
-        RE_UNMUTE,
-        r"^unmute:(?P<chat_id>-?\d+):(?P<message_id>\d+|none):(?P<user_id>\d+)$"
-    )
+    regex!(RE_UNMUTE, r"^unmute:(?P<chat_id>-?\d+):(?P<message_id>\d+|none):(?P<user_id>\d+)$")
 }
 
 #[inline]
 pub fn re_ban() -> &'static Regex {
-    regex!(
-        RE_BAN,
-        r"^ban:(?P<chat_id>-?\d+):(?P<message_id>\d+|none):(?P<user_id>\d+)$"
-    )
+    regex!(RE_BAN, r"^ban:(?P<chat_id>-?\d+):(?P<message_id>\d+|none):(?P<user_id>\d+)$")
 }

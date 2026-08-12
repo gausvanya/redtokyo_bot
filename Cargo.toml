@@ -20,8 +20,8 @@ too_many_arguments = "allow"
 tokio = { version = "1.53.1", default-features = false, features = ["rt-multi-thread", "macros"] }
 telers = { version = "1.0.0-beta.8", default-features = false, features = ["signal"] }
 
-sea-orm = { version = "2.0.0", default-features = false, features = ["sqlx-postgres", "runtime-tokio-rustls", "macros", "with-chrono"] }
-moka = { version = "0.12.15", default-features = false, features = ["future"] }
+sea-orm = { version = "2.0.1", default-features = false, features = ["sqlx-postgres", "runtime-tokio-rustls", "macros", "with-chrono"] }
+moka = { version = "0.12.16", default-features = false, features = ["future"] }
 
 serde = { version = "1.0.228", default-features = false, features = ["derive"] }
 serde_json = { version = "1.0.151", default-features = false, features = ["std"] }
@@ -40,5 +40,5 @@ smallvec = { version = "2.0.0-alpha.12", default-features = false }
 dotenvy = { version = "0.15.7", default-features = false }
 rand = { version = "0.10.2", default-features = false }
 anyhow = { version = "1.0.104", default-features = false }
-thiserror = { version = "2.0.19", default-features = false }
+thiserror = { version = "2.0.20", default-features = false }
 regex = { version = "1.13.1", default-features = false, features = ["unicode-perl"] }

@@ -1,9 +1,8 @@
+use std::{fs, path::Path};
+
+use tracing_subscriber::{EnvFilter, Layer, fmt, layer::SubscriberExt, util::SubscriberInitExt};
+
 use crate::config::get_config;
-use std::fs;
-use std::path::Path;
-use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::{EnvFilter, Layer, fmt};
 
 mod bot;
 mod config;

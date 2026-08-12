@@ -1,10 +1,13 @@
-use crate::bot::libs::iris_api::OrderBookResponse;
-use crate::bot::middlewares::media_group::MediaItem;
+use std::{
+    sync::{Arc, LazyLock},
+    time::Duration,
+};
+
 use moka::future::Cache;
 use serde::{Deserialize, Serialize};
-use std::sync::{Arc, LazyLock};
-use std::time::Duration;
 use tokio::sync::Mutex;
+
+use crate::bot::{libs::iris_api::OrderBookResponse, middlewares::media_group::MediaItem};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct SummonPayload {

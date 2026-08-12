@@ -1,15 +1,22 @@
-use crate::bot::enums::tg_emoji::Emoji;
-use crate::bot::filters::antispam::AntispamFilter;
-use crate::bot::keyboards::antispam_keyboard;
-use crate::bot::methods::message::MessageMethods;
-use crate::bot::utils::chat::{ADMIN_CHAT_ID, ADMIN_IDS, SCAM_CHANNEL_ID, muted_permissions};
-use crate::bot::utils::user::{get_user_info, get_user_mention};
-use telers::Request;
-use telers::errors::EventErrorKind;
-use telers::event::EventReturn;
-use telers::methods::{DeleteMessages, RestrictChatMember, UnpinChatMessage};
-use telers::middlewares::outer::{Middleware, MiddlewareResponse};
-use telers::types::ReplyParameters;
+use telers::{
+    Request,
+    errors::EventErrorKind,
+    event::EventReturn,
+    methods::{DeleteMessages, RestrictChatMember, UnpinChatMessage},
+    middlewares::outer::{Middleware, MiddlewareResponse},
+    types::ReplyParameters,
+};
+
+use crate::bot::{
+    enums::tg_emoji::Emoji,
+    filters::antispam::AntispamFilter,
+    keyboards::antispam_keyboard,
+    methods::message::MessageMethods,
+    utils::{
+        chat::{ADMIN_CHAT_ID, ADMIN_IDS, SCAM_CHANNEL_ID, muted_permissions},
+        user::{get_user_info, get_user_mention},
+    },
+};
 
 #[derive(Clone)]
 pub struct AntispamMiddleware;
@@ -22,7 +29,13 @@ where
         &mut self,
         request: Request<Client>,
     ) -> Result<MiddlewareResponse<Client>, EventErrorKind> {
-        if let Some(msg) = request.update.message().or(request.update.edited_message()) {
+        if let Some(msg) = request
+            .update
+            .message()
+            .or(request
+                .update
+                .edited_message())
+        {
             let chat_id = msg.chat().id();
 
             if let Some(sender) = msg.sender_chat()
@@ -42,7 +55,9 @@ where
             }
 
             let filter = AntispamFilter;
-            let (is_passed, reason, messages) = filter.check(&request.bot, msg).await;
+            let (is_passed, reason, messages) = filter
+                .check(&request.bot, msg)
+                .await;
 
             if !is_passed {
                 let user_mention =
@@ -71,8 +86,7 @@ where
                 let msg_text = match reason {
                     "spam" => {
                         format!(
-                            "{} {} был ограничен на сутки\n\
-                            {} Причина: Рассылка спам-ссылок.",
+                            "{} {} был ограничен на сутки\n{} Причина: Рассылка спам-ссылок.",
                             Emoji::Information,
                             user_mention,
                             Emoji::Balloon
@@ -80,22 +94,22 @@ where
                     }
                     "bot" => {
                         format!(
-                            "{} Ограничен гостевой бот {} (<code>@{}</code>)\n\
-                            {} Чат: {:?}\n\
-                            {} Сообщение: {:?}",
+                            "{} Ограничен гостевой бот {} (<code>@{}</code>)\n{} Чат: {:?}\n{} \
+                             Сообщение: {:?}",
                             Emoji::Bot,
                             user_mention,
                             user_id,
                             Emoji::Megaphone,
-                            msg.chat().title().unwrap_or("Без названия"),
+                            msg.chat()
+                                .title()
+                                .unwrap_or("Без названия"),
                             Emoji::Balloon,
                             msg.text().unwrap_or("")
                         )
                     }
                     "raid" => {
                         format!(
-                            "📛 Сработал антирейд фильтр!\n\
-                            {} Пользователь {} ограничен на сутки",
+                            "📛 Сработал антирейд фильтр!\n{} Пользователь {} ограничен на сутки",
                             Emoji::Human,
                             user_mention
                         )
@@ -125,7 +139,9 @@ where
                         MessageMethods::send(msg)
                             .chat_id(ADMIN_CHAT_ID)
                             .reply_parameters(
-                                ReplyParameters::new().chat_id(chat_id).message_id(msg_id),
+                                ReplyParameters::new()
+                                    .chat_id(chat_id)
+                                    .message_id(msg_id),
                             )
                             .reply_markup(antispam_keyboard(chat_id, user_id, Some(msg_id)))
                             .text(msg_text),

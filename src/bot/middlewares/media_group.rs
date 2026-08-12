@@ -1,12 +1,14 @@
+use std::{sync::Arc, time::Duration};
+
+use telers::{
+    Request,
+    errors::EventErrorKind,
+    event::EventReturn,
+    middlewares::outer::{Middleware, MiddlewareResponse},
+};
+use tokio::{sync::Mutex, time::sleep};
+
 use crate::database::cache::MEDIA_GROUP_CACHE;
-use std::sync::Arc;
-use std::time::Duration;
-use telers::Request;
-use telers::errors::EventErrorKind;
-use telers::event::EventReturn;
-use telers::middlewares::outer::{Middleware, MiddlewareResponse};
-use tokio::sync::Mutex;
-use tokio::time::sleep;
 
 #[derive(Clone, Debug)]
 pub enum MediaKind {
@@ -39,7 +41,10 @@ where
         if let Some(mg_id) = message.media_group_id() {
             let mg_id_str = mg_id.to_string();
 
-            let mutex = if let Some(m) = MEDIA_GROUP_CACHE.get(&mg_id_str).await {
+            let mutex = if let Some(m) = MEDIA_GROUP_CACHE
+                .get(&mg_id_str)
+                .await
+            {
                 m
             } else {
                 let new_mutex = Arc::new(Mutex::new(Vec::new()));
@@ -49,7 +54,10 @@ where
                 new_mutex
             };
 
-            let new_item = if let Some(photo) = message.photo().and_then(|p| p.last()) {
+            let new_item = if let Some(photo) = message
+                .photo()
+                .and_then(|p| p.last())
+            {
                 Some(MediaItem {
                     file_id: photo.file_id.to_string(),
                     kind: MediaKind::Photo,
@@ -60,16 +68,22 @@ where
                     kind: MediaKind::Video,
                 })
             } else {
-                message.document().map(|document| MediaItem {
-                    file_id: document.file_id.to_string(),
-                    kind: MediaKind::Video,
-                })
+                message
+                    .document()
+                    .map(|document| MediaItem {
+                        file_id: document
+                            .file_id
+                            .to_string(),
+                        kind: MediaKind::Video,
+                    })
             };
 
             {
                 let mut guard = mutex.lock().await;
                 if let Some(item) = new_item
-                    && !guard.iter().any(|i| i.file_id == item.file_id)
+                    && !guard
+                        .iter()
+                        .any(|i| i.file_id == item.file_id)
                 {
                     guard.push(item);
                 }

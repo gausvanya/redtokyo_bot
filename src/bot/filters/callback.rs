@@ -1,8 +1,8 @@
-use crate::bot::filters::command::ParsedCommand;
 use regex::Regex;
 use smallvec::SmallVec;
-use telers::errors::FilterError;
-use telers::{Filter, FilterResult, Request};
+use telers::{Filter, FilterResult, Request, errors::FilterError};
+
+use crate::bot::filters::command::ParsedCommand;
 
 #[derive(Clone)]
 pub struct CallbackFilter {
@@ -12,7 +12,9 @@ pub struct CallbackFilter {
 impl CallbackFilter {
     #[inline]
     pub fn new(regex: &'static Regex) -> Self {
-        Self { regex }
+        Self {
+            regex,
+        }
     }
 }
 
@@ -29,7 +31,10 @@ where
         let regex = self.regex;
 
         async move {
-            let query = match request.update.callback_query() {
+            let query = match request
+                .update
+                .callback_query()
+            {
                 Some(q) => q,
                 None => return Ok(false),
             };
@@ -45,13 +50,25 @@ where
             };
 
             let mut groups: SmallVec<(&'static str, Box<str>), 4> = SmallVec::new();
-            for name in regex.capture_names().flatten() {
+            for name in regex
+                .capture_names()
+                .flatten()
+            {
                 if let Some(m) = caps.name(name) {
-                    groups.push((name, m.as_str().to_owned().into()));
+                    groups.push((
+                        name,
+                        m.as_str()
+                            .to_owned()
+                            .into(),
+                    ));
                 }
             }
 
-            request.extensions.insert(ParsedCommand { groups });
+            request
+                .extensions
+                .insert(ParsedCommand {
+                    groups,
+                });
 
             Ok(true)
         }

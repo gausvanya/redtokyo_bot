@@ -1,10 +1,10 @@
-use crate::database::models::verbal_warns;
 use chrono::NaiveDateTime;
 use sea_orm::{
-    ActiveModelTrait, DatabaseConnection, DbErr, DeleteResult, EntityTrait, InsertResult,
-    IntoActiveModel, NotSet, QueryFilter, Set,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, DeleteResult, EntityTrait,
+    InsertResult, IntoActiveModel, NotSet, QueryFilter, QueryOrder, Set,
 };
-use sea_orm::{ColumnTrait, QueryOrder};
+
+use crate::database::models::verbal_warns;
 
 pub struct VerbalWarnsRepo {
     pub db: DatabaseConnection,
@@ -12,7 +12,9 @@ pub struct VerbalWarnsRepo {
 
 impl VerbalWarnsRepo {
     pub fn new(db: DatabaseConnection) -> Self {
-        VerbalWarnsRepo { db }
+        VerbalWarnsRepo {
+            db,
+        }
     }
 
     #[inline]
@@ -30,7 +32,9 @@ impl VerbalWarnsRepo {
 
     #[inline]
     pub async fn delete(&self, warn: verbal_warns::Model) -> Result<DeleteResult, DbErr> {
-        warn.into_active_model().delete(&self.db).await
+        warn.into_active_model()
+            .delete(&self.db)
+            .await
     }
 
     #[inline]

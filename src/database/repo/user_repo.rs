@@ -1,9 +1,8 @@
-use crate::bot::enums::user_type::UserIdentity;
-use crate::database::models::user;
-use sea_orm::ColumnTrait;
-use sea_orm::QueryFilter;
-use sea_orm::sea_query::OnConflict;
-use sea_orm::{DatabaseConnection, DbErr, EntityTrait, Set};
+use sea_orm::{
+    ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter, Set, sea_query::OnConflict,
+};
+
+use crate::{bot::enums::user_type::UserIdentity, database::models::user};
 
 pub struct UserRepo {
     pub db: DatabaseConnection,
@@ -11,13 +10,19 @@ pub struct UserRepo {
 
 impl UserRepo {
     pub fn new(db: DatabaseConnection) -> Self {
-        UserRepo { db }
+        UserRepo {
+            db,
+        }
     }
 
     #[inline]
     pub async fn get(&self, user: UserIdentity) -> Result<Option<user::Model>, DbErr> {
         match user {
-            UserIdentity::Id(user_id) => user::Entity::find_by_id(user_id).one(&self.db).await,
+            UserIdentity::Id(user_id) => {
+                user::Entity::find_by_id(user_id)
+                    .one(&self.db)
+                    .await
+            }
             UserIdentity::Username(username) => {
                 user::Entity::find()
                     .filter(user::Column::Username.eq(username))
