@@ -16,7 +16,7 @@ use crate::{
         keyboards::{captcha_keyboard, repeat_reg_keyboard},
         libs::iris_api::{IrisAPI, IrisApiError},
         utils::{
-            chat::{ADMIN_CHAT_ID, GARANT_CHAT_ID, PR_CHAT_ID},
+            chat::{ADMIN_CHAT_ID, GARANT_CHAT_ID},
             datetime::get_current_datetime,
             user::UserMention,
         },
@@ -31,10 +31,6 @@ pub async fn captcha_chat_join_request_handler(
 ) -> anyhow::Result<()> {
     let chat_id = event.chat.id();
     let user_id = event.from.id;
-
-    if chat_id == PR_CHAT_ID {
-        return Ok(());
-    }
 
     let captcha_repo = CaptchaRepo::new(db.clone());
 
@@ -231,10 +227,6 @@ pub async fn chat_member_updated_handler(
         .new_chat_member
         .user();
     let chat_id = event.chat.id();
-
-    if chat_id == PR_CHAT_ID {
-        return Ok(());
-    }
 
     let captcha_repo = CaptchaRepo::new(db);
 
