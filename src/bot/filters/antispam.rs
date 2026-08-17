@@ -1,4 +1,3 @@
-use regex::Regex;
 use telers::{
     Bot,
     client::Session,
@@ -8,7 +7,7 @@ use telers::{
 
 use crate::{
     bot::{
-        filters::regexes::RE_INVITE,
+        filters::regexes::re_referral,
         utils::{
             chat::{ALLOWED_BOT_IDS, ALLOWED_URLS, PR_CHAT_ID},
             user::get_user_info,
@@ -29,14 +28,10 @@ impl AntispamFilter {
 
         let text = msg
             .text()
-            .or(msg.caption())
-            .unwrap_or("");
-        let re = RE_INVITE.get_or_init(|| {
-            Regex::new(r"(?:t\.me|telegram\.(?:org|me|dog))/(?:\+\w+|gram_piarbot\?start=check_)")
-                .unwrap()
-        });
+            .or_else(|| msg.caption())
+            .unwrap_or_default();
 
-        for mat in re.find_iter(text) {
+        for mat in re_referral().find_iter(text) {
             if !ALLOWED_URLS.contains(&mat.as_str()) {
                 return true;
             }
