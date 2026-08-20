@@ -3,7 +3,6 @@ use std::sync::OnceLock;
 use regex::Regex;
 
 const PREFIX: &str = r#"(?:[.!/]\s?|сап\s?)?"#;
-// const USER_PATTERN: &str = r#"(?:\s+(?:https?://(?:t\.me|telegram\.(?:org|dog))/|@|tg://(?:user\?id=|openmessage\?user_id=|resolve\?domain=)|<a\s+href=["']tg://user\?id=)?(?P<user>-\d+|\d+|[a-zA-Z0-9_]{5,32})(?:["']?>[^<]*</a>)?)?"#;
 const USER_PATTERN: &str = r#"(?:https?://(?:t\.me|telegram\.(?:org|dog))/|@|tg://(?:user\?id=|openmessage\?user_id=|resolve\?domain=)|<a\s+href=["']tg://user\?id=)?(?P<user>-\d+|\d+|[a-zA-Z0-9_]{5,32})(?:["']?>[^<]*</a>)?"#;
 
 macro_rules! regex {
@@ -37,7 +36,7 @@ static RE_UNMUTE: OnceLock<Regex> = OnceLock::new();
 static RE_BAN: OnceLock<Regex> = OnceLock::new();
 
 // FILTERS
-pub static RE_INVITE: OnceLock<Regex> = OnceLock::new();
+pub static RE_REFERRAL: OnceLock<Regex> = OnceLock::new();
 
 // COMMANDS REGEX
 #[inline]
@@ -170,4 +169,9 @@ pub fn re_unmute() -> &'static Regex {
 #[inline]
 pub fn re_ban() -> &'static Regex {
     regex!(RE_BAN, r"^ban:(?P<chat_id>-?\d+):(?P<message_id>\d+|none):(?P<user_id>\d+)$")
+}
+
+#[inline]
+pub fn re_referral() -> &'static Regex {
+    regex!(RE_REFERRAL, r"(?:t\.me|telegram\.(?:org|me|dog))/(?:\+\w+|gram_piarbot\?start=check_)")
 }
