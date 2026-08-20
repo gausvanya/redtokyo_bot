@@ -256,22 +256,19 @@ pub async fn unmute_callback_handler(
     let Some(message) = call.message else {
         return Ok(());
     };
-    
+
     let (chat_id, user_id, message_id) = unsafe {
         (
-            args
-                .require("chat_id")
+            args.require("chat_id")
                 .parse::<i64>()
                 .unwrap_unchecked(),
-            args
-                .require("user_id")
+            args.require("user_id")
                 .parse::<i64>()
                 .unwrap_unchecked(),
-            args
-                .require("message_id")
+            args.require("message_id")
                 .parse::<i64>()
-                .unwrap_unchecked()
-            )
+                .unwrap_unchecked(),
+        )
     };
 
     if !ADMIN_IDS.contains(&call.from.id) {
@@ -354,18 +351,15 @@ pub async fn ban_callback_handler(
 
     let (chat_id, user_id, message_id) = unsafe {
         (
-            args
-                .require("chat_id")
+            args.require("chat_id")
                 .parse::<i64>()
                 .unwrap_unchecked(),
-            args
-                .require("user_id")
+            args.require("user_id")
                 .parse::<i64>()
                 .unwrap_unchecked(),
-            args
-                .require("message_id")
+            args.require("message_id")
                 .parse::<i64>()
-                .unwrap_unchecked()
+                .unwrap_unchecked(),
         )
     };
 
