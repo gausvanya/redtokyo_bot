@@ -24,8 +24,6 @@ pub enum Emoji {
     #[strum(props(id = "5334544901428229844", char = "ℹ️"))] Information,
     #[strum(props(id = "5837028497075213564", char = "💲"))] Gold,
     #[strum(props(id = "5350713563512052787", char = "📉"))] Trade,
-
-
 }
 
 impl fmt::Display for Emoji {
