@@ -13,23 +13,20 @@ use crate::{
         methods::message::MessageMethods,
         middlewares::media_group::MediaKind,
         utils::{
-            chat::{ADMIN_IDS, GL_ADMINS, SCAM_CHANNEL_ID},
+            chat::{GL_ADMINS, SCAM_CHANNEL_ID},
             user::{get_user_info, get_user_mention},
         },
     },
-    database::{cache::MEDIA_GROUP_CACHE, models::scam_base, repo::scam_base::ScamBaseRepo},
+    database::{
+        cache::MEDIA_GROUP_CACHE,
+        models::scam_base,
+        repo::{admins_repo::AdminRepo, scam_base::ScamBaseRepo},
+    },
 };
 
 const RED_STATUS: &str = "AgACAgIAAyEFAASglsVWAAIpMmoPFXVoP7Ws4wMmPaHPp2ki4FLKAAKIIGsbaKZ5SDqWL07xu2FLAAgBAAMCAAN3AAceBA";
 const YELLOW_STATUS: &str = "AgACAgIAAyEFAASglsVWAAIpMGoPFW2XejOE4n-j0vPWQbGTiLX1AAKGIGsbaKZ5SBpainAvbA5jAAgBAAMCAAN3AAceBA";
 const GREEN_STATUS: &str = "AgACAgIAAyEFAASglsVWAAIpMWoPFXKT-_9D7GVoKC_D5XJSozBwAAKHIGsbaKZ5SDreok4QrSaYAAgBAAMCAAN3AAceBA";
-
-// const RED_STATUS: &str =
-//     "AgACAgIAAyEFAAMBC-_NCAACAThqS2MTsI_lB0Iv6pl9_B_fxHoOZwACRhdrG-YHWUp7ZREzH2BC3QEAAwIAA3cAAzwE";
-// const YELLOW_STATUS: &str =
-//     "AgACAgIAAyEFAAMBC-_NCAACATlqS2MTB5Flyj6LtpTjWPAh_ImI7wACRxdrG-YHWUo10_mKv79swwEAAwIAA3cAAzwE";
-// const GREEN_STATUS: &str =
-//     "AgACAgIAAyEFAAMBC-_NCAACATpqS2MTgiLtw4T-9NTzUA7jJfN_aAACSBdrG-YHWUp7Hl080SOfnAEAAwIAA3cAAzwE";
 
 pub async fn set_scam_command_handler(
     bot: Bot,
@@ -39,7 +36,13 @@ pub async fn set_scam_command_handler(
 ) -> anyhow::Result<()> {
     let admin = get_user_info(&msg);
 
-    if !ADMIN_IDS.contains(&admin.0) {
+    let admin_repo = AdminRepo::new(db.clone());
+
+    if !admin_repo
+        .get(admin.0)
+        .await?
+        .is_some()
+    {
         return Ok(());
     }
 
@@ -260,7 +263,13 @@ pub async fn remove_scam_command_handler(
 ) -> anyhow::Result<()> {
     let admin = get_user_info(&msg);
 
-    if !ADMIN_IDS.contains(&admin.0) {
+    let admin_repo = AdminRepo::new(db.clone());
+
+    if !admin_repo
+        .get(admin.0)
+        .await?
+        .is_some()
+    {
         return Ok(());
     }
 
