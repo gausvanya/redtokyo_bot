@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use telers::types::{Message, User};
 
 use crate::bot::utils::text::clear_text;
@@ -5,29 +7,28 @@ use crate::bot::utils::text::clear_text;
 pub fn get_user_mention(user_id: i64, username: Option<&str>, full_name: String) -> Box<str> {
     let full_name = clear_text(full_name);
 
-    let display_name = if full_name.is_empty() {
-        user_id.to_string()
+    let display_name: Cow<str> = if !full_name.is_empty() {
+        Cow::Owned(full_name)
+    } else if let Some(uname) = username {
+        Cow::Borrowed(uname)
     } else {
-        full_name
+        Cow::Owned(user_id.to_string())
     };
 
-    let user_id_str = user_id.to_string();
-
-    let result = if let Some(cropped_id) = user_id_str.strip_prefix("-100") {
-        match username {
-            Some(uname) => format!("<a href='https://t.me/{}'>{}</a>", uname, display_name),
-            None => {
-                format!("<a href='tg://openmessage?chat_id={}'>{}</a>", cropped_id, display_name)
+    let href = match username {
+        Some(uname) => format!("https://t.me/{uname}"),
+        None => {
+            const SUPERGROUP_PREFIX: i64 = -1_000_000_000_000;
+            if user_id <= SUPERGROUP_PREFIX {
+                let chat_id = user_id - SUPERGROUP_PREFIX;
+                format!("tg://openmessage?chat_id={chat_id}")
+            } else {
+                format!("tg://openmessage?user_id={user_id}")
             }
         }
-    } else {
-        match username {
-            Some(uname) => format!("<a href='https://t.me/{}'>{}</a>", uname, display_name),
-            None => format!("<a href='tg://openmessage?user_id={}'>{}</a>", user_id, display_name),
-        }
     };
 
-    result.into_boxed_str()
+    format!("<a href='{href}'>{display_name}</a>").into_boxed_str()
 }
 
 pub trait UserMention {
