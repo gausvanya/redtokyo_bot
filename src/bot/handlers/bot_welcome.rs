@@ -1,12 +1,20 @@
+use sea_orm::DatabaseConnection;
 use telers::{
-    Bot,
+    Bot, Extension,
     methods::SendMessage,
     types::{ChatMember, ChatMemberUpdated},
 };
 
-use crate::bot::utils::{chat::is_allowed_chat, user::UserMention};
+use crate::{
+    bot::utils::{chat::is_allowed_chat, user::UserMention},
+    database::repo::user_repo::UserRepo,
+};
 
-pub async fn bot_welcome_handler(bot: Bot, event: ChatMemberUpdated) -> anyhow::Result<()> {
+pub async fn bot_welcome_handler(
+    bot: Bot,
+    event: ChatMemberUpdated,
+    Extension(db): Extension<DatabaseConnection>,
+) -> anyhow::Result<()> {
     let is_joined = matches!(event.old_chat_member, ChatMember::Left(_) | ChatMember::Kicked(_))
         && !matches!(event.new_chat_member, ChatMember::Left(_) | ChatMember::Kicked(_));
 
@@ -14,7 +22,21 @@ pub async fn bot_welcome_handler(bot: Bot, event: ChatMemberUpdated) -> anyhow::
         return Ok(());
     }
 
-    if !is_allowed_chat(&bot, event.chat.id()).await {
+    let user_repo = UserRepo::new(db.clone());
+    let chat = event.chat;
+
+    user_repo
+        .insert(
+            chat.id(),
+            chat.username()
+                .map(|s| s.to_string()),
+            chat.title()
+                .unwrap_or_default()
+                .to_string(),
+        )
+        .await?;
+
+    if !is_allowed_chat(&bot, chat.id(), db).await? {
         return Ok(());
     }
 
@@ -28,7 +50,7 @@ pub async fn bot_welcome_handler(bot: Bot, event: ChatMemberUpdated) -> anyhow::
             .mention()
     );
 
-    bot.send(SendMessage::new(event.chat.id(), text_mention).parse_mode("HTML"))
+    bot.send(SendMessage::new(chat.id(), text_mention).parse_mode("HTML"))
         .await?;
 
     Ok(())
