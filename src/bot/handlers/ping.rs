@@ -1,16 +1,10 @@
 use std::time::Instant;
 
-use telers::{Bot, Extension, types::Message};
+use telers::{Bot, types::Message};
 
-use crate::bot::{
-    enums::tg_emoji::Emoji, filters::command::ParsedCommand, methods::message::MessageMethods,
-};
+use crate::bot::{enums::tg_emoji::Emoji, methods::message::MessageMethods};
 
-pub async fn ping_command_handler(
-    bot: Bot,
-    msg: Message,
-    Extension(_): Extension<ParsedCommand>,
-) -> anyhow::Result<()> {
+pub async fn ping_command_handler(bot: Bot, msg: Message) -> anyhow::Result<()> {
     let start_ping = Instant::now();
 
     let message_text = format!("{} Проверка пинга...", Emoji::PingPong);
