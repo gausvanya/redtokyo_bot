@@ -4,13 +4,14 @@ use sea_orm::{
 
 use crate::{bot::enums::user_type::UserIdentity, database::models::user};
 
+#[derive(Clone)]
 pub struct UserRepo {
     pub db: DatabaseConnection,
 }
 
 impl UserRepo {
     pub fn new(db: DatabaseConnection) -> Self {
-        UserRepo {
+        Self {
             db,
         }
     }
@@ -39,6 +40,15 @@ impl UserRepo {
         username: Option<String>,
         full_name: String,
     ) -> Result<user::Model, DbErr> {
+        if let Some(ref uname) = username {
+            user::Entity::update_many()
+                .col_expr(user::Column::Username, sea_orm::sea_query::Expr::value(None::<String>))
+                .filter(user::Column::Username.eq(uname))
+                .filter(user::Column::Id.ne(user_id))
+                .exec(&self.db)
+                .await?;
+        }
+
         let active_model = user::ActiveModel {
             id: Set(user_id),
             username: Set(username),
