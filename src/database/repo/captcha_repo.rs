@@ -10,7 +10,7 @@ pub struct CaptchaRepo {
 
 impl CaptchaRepo {
     pub fn new(db: DatabaseConnection) -> Self {
-        CaptchaRepo {
+        Self {
             db,
         }
     }
