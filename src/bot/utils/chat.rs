@@ -1,8 +1,11 @@
+use sea_orm::DatabaseConnection;
 use telers::{
     Bot,
     methods::{LeaveChat, SendMessage},
     types::ChatPermissions,
 };
+
+use crate::database::repo::allowed_chats_repo::AllowedChatsRepo;
 
 pub const ADMIN_CHAT_ID: i64 = -1003904096608;
 pub const DUEL_CHAT_ID: i64 = -1001876817712;
@@ -10,21 +13,6 @@ pub const GARANT_CHAT_ID: i64 = -1002393805826;
 pub const SCAM_CHANNEL_ID: i64 = -1003979922414;
 pub const PR_CHAT_ID: i64 = -1002635887529;
 pub const GL_ADMINS: [i64; 4] = [1830362280, 8630742541, 1396129644, 8083769211];
-
-pub const ADMIN_IDS: [i64; 19] = [
-    1830362280, 5785884253, 8577420947, 1396129644, 5448752141, 5253969011, 7868116959, 8630742541,
-    8138413942, 7595142206, 8003158848, 7693221405, 8083769211, 6755121814, 48292668, 222457737,
-    5971869071, 7667509370, 6613866139,
-];
-const ALLOWED_CHATS: [i64; 7] = [
-    -1001876817712,
-    -1002393805826,
-    -1001664794867,
-    -1001986907414,
-    -1003979922414,
-    -1003904096608,
-    -1002635887529,
-];
 pub const ALLOWED_BOT_IDS: [i64; 10] = [
     8289185888, 8670571630, 6212219963, 6775391315, 6032895492, 1559501630, 5788046441, 5014831088,
     650863105, 8377231659,
@@ -38,17 +26,26 @@ pub const ALLOWED_URLS: [&str; 5] = [
     "https://t.me/+xWMOTmTObWxkOGM6",
 ];
 
-pub async fn is_allowed_chat(bot: &Bot, chat_id: i64) -> bool {
-    if !ALLOWED_CHATS.contains(&chat_id) {
+pub async fn is_allowed_chat(
+    bot: &Bot,
+    chat_id: i64,
+    db: DatabaseConnection,
+) -> anyhow::Result<bool> {
+    let allowed_chats_repo = AllowedChatsRepo::new(db);
+    let is_allowed_chat = allowed_chats_repo
+        .get(chat_id)
+        .await?;
+
+    if is_allowed_chat.is_none() {
         let _ = bot
-            .send(SendMessage::new(chat_id, "👋 Я выхожу"))
+            .send(SendMessage::new(chat_id, "👋 Я выхожу, мне тут не место."))
             .await;
         let _ = bot
             .send(LeaveChat::new(chat_id))
             .await;
-        return false;
+        return Ok(false);
     }
-    true
+    Ok(true)
 }
 
 pub fn muted_permissions() -> ChatPermissions {
