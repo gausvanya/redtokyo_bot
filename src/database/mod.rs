@@ -6,16 +6,13 @@ pub mod cache;
 pub mod models;
 pub mod repo;
 
-pub async fn _migration(db: &DbConn) -> Result<(), DbErr> {
+#[inline]
+async fn _migration(db: &DbConn) -> Result<(), DbErr> {
     db.execute_unprepared("CREATE EXTENSION IF NOT EXISTS citext")
         .await?;
 
     db.get_schema_builder()
-        .register(models::user::Entity)
-        .register(models::garant::Entity)
-        .register(models::scam_base::Entity)
-        .register(models::verbal_warns::Entity)
-        .register(models::successful_captcha::Entity)
+        .register(models::admins::Entity)
         .apply(db)
         .await?;
 

@@ -5,6 +5,8 @@ use crate::bot::{
     filters::{callback::CallbackFilter, command::CommandFilter, regexes},
 };
 
+mod admin;
+mod allowed_chats;
 mod bot_welcome;
 mod captcha;
 mod db_update;
@@ -49,6 +51,16 @@ pub fn register_routers() -> Router {
                     .filter(CommandFilter::new(regexes::re_minimal_rate())),
                 Handler::new(db_update::db_update_command_handler)
                     .filter(CommandFilter::new(regexes::re_db_update())),
+                Handler::new(allowed_chats::allowed_chats_command_handler)
+                    .filter(CommandFilter::new(regexes::re_allowed_chats())),
+                Handler::new(allowed_chats::rem_allowed_chats_command_handler)
+                    .filter(CommandFilter::new(regexes::re_rem_allowed_chats())),
+                Handler::new(admin::add_admin_command_handler)
+                    .filter(CommandFilter::new(regexes::re_add_admin())),
+                Handler::new(admin::rem_admin_command_handler)
+                    .filter(CommandFilter::new(regexes::re_rem_admin())),
+                Handler::new(admin::list_admin_command_handler)
+                    .filter(CommandFilter::new(regexes::re_list_admin())),
             ])
         })
         .on_chat_join_request(|observer| {
