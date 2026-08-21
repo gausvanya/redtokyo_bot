@@ -3,7 +3,6 @@ use chrono_tz::Europe::Moscow;
 use sea_orm::DatabaseConnection;
 use telers::{
     Bot, Extension,
-    event::simple::HandlerResult,
     methods::{
         AnswerCallbackQuery, ApproveChatJoinRequest, BanChatMember, DeclineChatJoinRequest,
         DeleteMessages, EditMessageReplyMarkup, GetChatMember, RestrictChatMember,
@@ -17,15 +16,11 @@ use crate::{
         filters::command::ParsedCommand,
         libs::iris_api::{IrisAPI, IrisApiError},
         methods::message::MessageMethods,
-        utils::{
-            chat::{ADMIN_IDS, full_permissions},
-            datetime::get_current_datetime,
-            user::get_user_mention,
-        },
+        utils::{chat::full_permissions, datetime::get_current_datetime, user::get_user_mention},
     },
     database::{
         cache::SUMMON_CACHE,
-        repo::{captcha_repo::CaptchaRepo, garant_repo::GarantRepo},
+        repo::{admins_repo::AdminRepo, captcha_repo::CaptchaRepo, garant_repo::GarantRepo},
     },
 };
 
@@ -93,7 +88,7 @@ pub async fn garant_call_callback_handler(
     call: CallbackQuery,
     Extension(db): Extension<DatabaseConnection>,
     Extension(args): Extension<ParsedCommand>,
-) -> HandlerResult {
+) -> anyhow::Result<()> {
     let Some(message) = call.message else {
         return Ok(());
     };
@@ -127,7 +122,13 @@ pub async fn garant_call_callback_handler(
     };
 
     let is_author = user_id == cached_data.creator_id;
-    let is_admin = ADMIN_IDS.contains(&user_id);
+
+    let admin_repo = AdminRepo::new(db.clone());
+
+    let is_admin = admin_repo
+        .get(user_id)
+        .await?
+        .is_some();
 
     let garant_repo = GarantRepo::new(db.clone());
     let is_garant = garant_repo
@@ -251,8 +252,9 @@ pub async fn repeat_reg_callback_handler(
 pub async fn unmute_callback_handler(
     bot: Bot,
     call: CallbackQuery,
+    Extension(db): Extension<DatabaseConnection>,
     Extension(args): Extension<ParsedCommand>,
-) -> HandlerResult {
+) -> anyhow::Result<()> {
     let Some(message) = call.message else {
         return Ok(());
     };
@@ -271,7 +273,14 @@ pub async fn unmute_callback_handler(
         )
     };
 
-    if !ADMIN_IDS.contains(&call.from.id) {
+    let admin_repo = AdminRepo::new(db);
+
+    let is_admin = admin_repo
+        .get(call.from.id)
+        .await?
+        .is_some();
+
+    if !is_admin {
         bot.send(
             AnswerCallbackQuery::new(call.id.clone())
                 .text("У вас недостаточно прав")
@@ -343,8 +352,9 @@ pub async fn unmute_callback_handler(
 pub async fn ban_callback_handler(
     bot: Bot,
     call: CallbackQuery,
+    Extension(db): Extension<DatabaseConnection>,
     Extension(args): Extension<ParsedCommand>,
-) -> HandlerResult {
+) -> anyhow::Result<()> {
     let Some(message) = call.message else {
         return Ok(());
     };
@@ -363,7 +373,14 @@ pub async fn ban_callback_handler(
         )
     };
 
-    if !ADMIN_IDS.contains(&call.from.id) {
+    let admin_repo = AdminRepo::new(db.clone());
+
+    let is_admin = admin_repo
+        .get(call.from.id)
+        .await?
+        .is_some();
+
+    if !is_admin {
         bot.send(
             AnswerCallbackQuery::new(call.id.clone())
                 .text("У вас недостаточно прав")
