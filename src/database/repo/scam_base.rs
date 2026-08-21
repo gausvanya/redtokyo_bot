@@ -11,7 +11,7 @@ pub struct ScamBaseRepo {
 
 impl ScamBaseRepo {
     pub fn new(db: DatabaseConnection) -> Self {
-        ScamBaseRepo {
+        Self {
             db,
         }
     }
