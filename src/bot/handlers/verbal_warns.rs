@@ -8,12 +8,11 @@ use crate::{
         filters::{command::ParsedCommand, get_user::GetUserInfo},
         methods::message::MessageMethods,
         utils::{
-            chat::ADMIN_IDS,
             datetime::get_current_datetime,
             user::{get_user_info, get_user_mention},
         },
     },
-    database::repo::verbal_warns_repo::VerbalWarnsRepo,
+    database::repo::{admins_repo::AdminRepo, verbal_warns_repo::VerbalWarnsRepo},
 };
 
 pub async fn set_warn_command_handler(
@@ -24,7 +23,13 @@ pub async fn set_warn_command_handler(
 ) -> anyhow::Result<()> {
     let admin_id = get_user_info(&msg).0;
 
-    if !ADMIN_IDS.contains(&admin_id) {
+    let admin_repo = AdminRepo::new(db.clone());
+
+    if !admin_repo
+        .get(admin_id)
+        .await?
+        .is_some()
+    {
         return Ok(());
     }
 
@@ -69,7 +74,13 @@ pub async fn remove_warn_command_handler(
 ) -> anyhow::Result<()> {
     let admin_id = get_user_info(&msg).0;
 
-    if !ADMIN_IDS.contains(&admin_id) {
+    let admin_repo = AdminRepo::new(db.clone());
+
+    if !admin_repo
+        .get(admin_id)
+        .await?
+        .is_some()
+    {
         return Ok(());
     }
 
