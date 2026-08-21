@@ -27,6 +27,11 @@ static RE_REASON_SCAM: OnceLock<Regex> = OnceLock::new();
 static RE_FILE_ID: OnceLock<Regex> = OnceLock::new();
 static RE_MINIMAL_RATE: OnceLock<Regex> = OnceLock::new();
 static DB_UPDATE_RATE: OnceLock<Regex> = OnceLock::new();
+static RE_ALLOWED_CHATS: OnceLock<Regex> = OnceLock::new();
+static RE_REM_ALLOWED_CHATS: OnceLock<Regex> = OnceLock::new();
+static RE_ADD_ADMIN: OnceLock<Regex> = OnceLock::new();
+static RE_REM_ADMIN: OnceLock<Regex> = OnceLock::new();
+static RE_LIST_ADMIN: OnceLock<Regex> = OnceLock::new();
 
 // CALLBACK REGEX STATIC
 static RE_CALLBACK_CAPTCHA: OnceLock<Regex> = OnceLock::new();
@@ -143,6 +148,37 @@ pub fn re_db_update() -> &'static Regex {
         DB_UPDATE_RATE,
         &format!(r#"(?i)^{PREFIX}обновить бд(?:\s+{USER_PATTERN})?(?:\n[\s\S]*)?$"#)
     )
+}
+
+#[inline]
+pub fn re_allowed_chats() -> &'static Regex {
+    regex!(
+        RE_ALLOWED_CHATS,
+        &format!(r#"(?i)^{PREFIX}разрешить чат(?:\s+{USER_PATTERN})(?:\n[\s\S]*)?$"#)
+    )
+}
+
+#[inline]
+pub fn re_rem_allowed_chats() -> &'static Regex {
+    regex!(
+        RE_REM_ALLOWED_CHATS,
+        &format!(r#"(?i)^{PREFIX}запретить чат(?:\s+{USER_PATTERN})(?:\n[\s\S]*)?$"#)
+    )
+}
+
+#[inline]
+pub fn re_add_admin() -> &'static Regex {
+    regex!(RE_ADD_ADMIN, &format!(r#"(?i)^{PREFIX}\+админ(?:\s+{USER_PATTERN})?(?:\n[\s\S]*)?$"#))
+}
+
+#[inline]
+pub fn re_rem_admin() -> &'static Regex {
+    regex!(RE_REM_ADMIN, &format!(r#"(?i)^{PREFIX}-админ(?:\s+{USER_PATTERN})?(?:\n[\s\S]*)?$"#))
+}
+
+#[inline]
+pub fn re_list_admin() -> &'static Regex {
+    regex!(RE_LIST_ADMIN, &format!(r#"(?i)^{PREFIX}сап админы(?:\n[\s\S]*)?$"#))
 }
 
 // CALLBACK REGEX
