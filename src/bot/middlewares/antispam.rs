@@ -1,3 +1,4 @@
+use sea_orm::DatabaseConnection;
 use telers::{
     Request,
     errors::EventErrorKind,
@@ -7,15 +8,18 @@ use telers::{
     types::ReplyParameters,
 };
 
-use crate::bot::{
-    enums::tg_emoji::Emoji,
-    filters::antispam::AntispamFilter,
-    keyboards::antispam_keyboard,
-    methods::message::MessageMethods,
-    utils::{
-        chat::{ADMIN_CHAT_ID, ADMIN_IDS, SCAM_CHANNEL_ID, muted_permissions},
-        user::{get_user_info, get_user_mention},
+use crate::{
+    bot::{
+        enums::tg_emoji::Emoji,
+        filters::antispam::AntispamFilter,
+        keyboards::antispam_keyboard,
+        methods::message::MessageMethods,
+        utils::{
+            chat::{ADMIN_CHAT_ID, SCAM_CHANNEL_ID, muted_permissions},
+            user::{get_user_info, get_user_mention},
+        },
     },
+    database::repo::admins_repo::AdminRepo,
 };
 
 #[derive(Clone)]
@@ -50,12 +54,23 @@ where
 
             let (user_id, username, full_name) = get_user_info(msg);
 
-            if ADMIN_IDS.contains(&user_id) {
-                return Ok((request, EventReturn::default()));
-            }
+            let db = request
+                .extensions
+                .get::<DatabaseConnection>()
+                .unwrap();
 
-            let filter = AntispamFilter;
-            let (is_passed, reason, messages) = filter
+            let admin_repo = AdminRepo::new(db.clone());
+
+            match admin_repo
+                .get(user_id)
+                .await
+                .unwrap()
+            {
+                Some(admin) => admin,
+                None => return Ok((request, EventReturn::default())),
+            };
+
+            let (is_passed, reason, messages) = AntispamFilter
                 .check(&request.bot, msg)
                 .await;
 
