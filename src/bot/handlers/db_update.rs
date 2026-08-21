@@ -6,9 +6,9 @@ use crate::{
         enums::{tg_emoji::Emoji, user_type::UserIdentity},
         filters::command::ParsedCommand,
         methods::message::MessageMethods,
-        utils::{chat::ADMIN_IDS, user::get_user_info},
+        utils::user::get_user_info,
     },
-    database::repo::user_repo::UserRepo,
+    database::repo::{admins_repo::AdminRepo, user_repo::UserRepo},
 };
 
 fn parse_user_id(s: &str) -> Option<i64> {
@@ -30,8 +30,13 @@ pub async fn db_update_command_handler(
     Extension(db): Extension<DatabaseConnection>,
 ) -> anyhow::Result<()> {
     let admin_id = get_user_info(&msg).0;
+    let admin_repo = AdminRepo::new(db.clone());
 
-    if !ADMIN_IDS.contains(&admin_id) {
+    if !admin_repo
+        .get(admin_id)
+        .await?
+        .is_some()
+    {
         return Ok(());
     }
 
