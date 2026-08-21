@@ -11,7 +11,7 @@ pub struct GarantRepo {
 
 impl GarantRepo {
     pub fn new(db: DatabaseConnection) -> Self {
-        GarantRepo {
+        Self {
             db,
         }
     }
