@@ -12,7 +12,7 @@ pub struct VerbalWarnsRepo {
 
 impl VerbalWarnsRepo {
     pub fn new(db: DatabaseConnection) -> Self {
-        VerbalWarnsRepo {
+        Self {
             db,
         }
     }
