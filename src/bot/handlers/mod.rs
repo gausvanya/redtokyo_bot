@@ -84,6 +84,8 @@ pub fn register_routers() -> Router {
                     .filter(CallbackFilter::new(regexes::re_del_sum())),
                 Handler::new(callbacks::repeat_reg_callback_handler)
                     .filter(CallbackFilter::new(regexes::re_repeat_reg())),
+                Handler::new(callbacks::repeat_novo_reg_callback_handler)
+                    .filter(CallbackFilter::new(regexes::re_repeat_novo_reg())),
                 Handler::new(callbacks::unmute_callback_handler)
                     .filter(CallbackFilter::new(regexes::re_unmute())),
                 Handler::new(callbacks::ban_callback_handler)
