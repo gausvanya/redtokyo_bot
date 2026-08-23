@@ -37,6 +37,7 @@ static RE_LIST_ADMIN: OnceLock<Regex> = OnceLock::new();
 static RE_CALLBACK_CAPTCHA: OnceLock<Regex> = OnceLock::new();
 static RE_DEL_SUM: OnceLock<Regex> = OnceLock::new();
 static RE_REPEAT_REG: OnceLock<Regex> = OnceLock::new();
+static RE_REPEAT_NOVO_REG: OnceLock<Regex> = OnceLock::new();
 static RE_UNMUTE: OnceLock<Regex> = OnceLock::new();
 static RE_BAN: OnceLock<Regex> = OnceLock::new();
 
@@ -195,6 +196,11 @@ pub fn re_del_sum() -> &'static Regex {
 #[inline]
 pub fn re_repeat_reg() -> &'static Regex {
     regex!(RE_REPEAT_REG, r"^repeat_reg:(?P<chat_id>-?\d+):(?P<user_id>\d+)$")
+}
+
+#[inline]
+pub fn re_repeat_novo_reg() -> &'static Regex {
+    regex!(RE_REPEAT_NOVO_REG, r"^repeat_novo_reg:(?P<chat_id>-?\d+):(?P<user_id>\d+)$")
 }
 
 #[inline]
