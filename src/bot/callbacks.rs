@@ -5,7 +5,7 @@ use telers::{
     Bot, Extension,
     methods::{
         AnswerCallbackQuery, ApproveChatJoinRequest, BanChatMember, DeclineChatJoinRequest,
-        DeleteMessages, EditMessageReplyMarkup, GetChatMember, RestrictChatMember,
+        DeleteMessages, EditMessageReplyMarkup, GetChat, GetChatMember, RestrictChatMember,
     },
     types::{CallbackQuery, ChatMember, ReplyParameters},
 };
@@ -14,9 +14,14 @@ use crate::{
     bot::{
         enums::tg_emoji::Emoji,
         filters::command::ParsedCommand,
+        keyboards::repeat_novo_reg_keyboard,
         libs::iris_api::{IrisAPI, IrisApiError},
         methods::message::MessageMethods,
-        utils::{chat::full_permissions, datetime::get_current_datetime, user::get_user_mention},
+        utils::{
+            chat::{ADMIN_CHAT_ID, full_permissions},
+            datetime::get_current_datetime,
+            user::{UserMention, get_user_mention},
+        },
     },
     database::{
         cache::SUMMON_CACHE,
@@ -47,19 +52,119 @@ pub async fn captcha_callback_handler(
     };
 
     if code == "3" {
-        let captcha_repo = CaptchaRepo::new(db.clone());
-        let _ = captcha_repo
-            .insert(chat_id, user_id)
-            .await;
+        let iris_api = IrisAPI::new();
+        match iris_api
+            .get_user_reg(user_id)
+            .await
+        {
+            Ok(value) => {
+                let reg_timestamp = value["result"]
+                    .as_i64()
+                    .unwrap_or(0);
+                let reg_timestamp_seconds = reg_timestamp / 1000;
 
-        bot.send(
-            MessageMethods::edit(&message)
-                .text("✅ Заявка в чат принята!")
-                .message_id(message.message_id()),
-        )
-        .await?;
-        bot.send(ApproveChatJoinRequest::new(chat_id, user_id))
-            .await?;
+                let reg_date = Moscow
+                    .timestamp_opt(reg_timestamp_seconds, 0)
+                    .single()
+                    .unwrap();
+
+                let now_msk = Utc::now().with_timezone(&Moscow);
+                let three_months_ago = now_msk - Duration::days(90);
+                let is_suspicious = reg_date > three_months_ago;
+
+                if is_suspicious {
+                    let formatted_date = reg_date
+                        .format("%d.%m.%Y %H:%M")
+                        .to_string();
+                    let duration = now_msk.signed_duration_since(reg_date);
+                    let total_days = duration.num_days();
+                    let months = total_days / 30;
+                    let remaining_days_after_months = total_days % 30;
+
+                    let weeks = duration.num_weeks();
+                    let days = duration.num_days() % 7;
+
+                    let diff_str = if months > 0 {
+                        if remaining_days_after_months > 0 {
+                            format!("{} мес. {} дн.", months, remaining_days_after_months)
+                        } else {
+                            format!("{} мес.", months)
+                        }
+                    } else if weeks > 0 {
+                        if days > 0 {
+                            format!("{} нед. {} дн.", weeks, days)
+                        } else {
+                            format!("{} нед.", weeks)
+                        }
+                    } else if total_days > 0 {
+                        format!("{} дн.", total_days)
+                    } else if duration.num_hours() > 0 {
+                        format!("{} ч.", duration.num_hours())
+                    } else if duration.num_minutes() > 0 {
+                        format!("{} мин.", duration.num_minutes())
+                    } else if duration.num_seconds() > 0 {
+                        format!("{} сек.", duration.num_seconds())
+                    } else {
+                        "дата не распознана".to_string()
+                    };
+
+                    let reg_info_formatted = format!("{} ({})", formatted_date, diff_str);
+
+                    let current_chat = bot
+                        .send(GetChat::new(chat_id))
+                        .await?;
+                    let user_mention = call.from.mention();
+
+                    let admin_text = format!(
+                        "{} Участник {} (<code>@{}</code>) вступил в чат {}\n{} Имеет регистрацию \
+                         в ирисе: {}",
+                        Emoji::Information,
+                        user_mention,
+                        user_id,
+                        current_chat
+                            .title()
+                            .unwrap_or(""),
+                        Emoji::Date,
+                        reg_info_formatted,
+                    );
+
+                    let captcha_repo = CaptchaRepo::new(db.clone());
+                    let _ = captcha_repo
+                        .insert(chat_id, user_id)
+                        .await;
+
+                    let _ = bot
+                        .send(
+                            MessageMethods::send(&message)
+                                .chat_id(ADMIN_CHAT_ID)
+                                .text(admin_text)
+                                .reply_parameters_option(None::<ReplyParameters>),
+                        )
+                        .await;
+                }
+
+                bot.send(
+                    MessageMethods::edit(&message)
+                        .text("✅ Заявка обработана успешно, добро пожаловать в чат!")
+                        .message_id(message.message_id()),
+                )
+                .await?;
+                bot.send(ApproveChatJoinRequest::new(chat_id, user_id))
+                    .await?;
+            }
+            Err(_) => {
+                let _ = bot
+                    .send(
+                        MessageMethods::edit(&message).chat_id(user_id).message_id(message.message_id()).text(
+                            format!(
+                                "{} Бот запрашивает разрешение на получение информации о дате регистрации в Iris: \
+                        <a href='https://t.me/iris_black_bot?start=request_rights_7635712622_reg'>перейти</a>",
+                                Emoji::Information
+                            ),
+                        ).reply_markup(repeat_novo_reg_keyboard(chat_id, user_id)),
+                    ).await?;
+            }
+        }
     } else {
         bot.send(
             MessageMethods::edit(&message)
@@ -238,6 +343,149 @@ pub async fn repeat_reg_callback_handler(
                 AnswerCallbackQuery::new(call.id)
                     .text("ℹ️ Вы не выдали боту права на просмотр даты регистрации в Iris")
                     .show_alert(true),
+            )
+            .await?;
+        }
+        Err(err) => {
+            tracing::error!("Ошибка при запросе к Iris API: {:?}", err);
+            return Err(err.into());
+        }
+    }
+    Ok(())
+}
+
+pub async fn repeat_novo_reg_callback_handler(
+    bot: Bot,
+    call: CallbackQuery,
+    Extension(db): Extension<DatabaseConnection>,
+    Extension(args): Extension<ParsedCommand>,
+) -> anyhow::Result<()> {
+    let Some(message) = call.message else {
+        return Ok(());
+    };
+
+    let (chat_id, user_id) = unsafe {
+        (
+            args.require("chat_id")
+                .parse::<i64>()
+                .unwrap_unchecked(),
+            args.require("user_id")
+                .parse::<i64>()
+                .unwrap_unchecked(),
+        )
+    };
+
+    let iris_api = IrisAPI::new();
+
+    match iris_api
+        .get_user_reg(user_id)
+        .await
+    {
+        Ok(value) => {
+            let reg_timestamp = value["result"]
+                .as_i64()
+                .unwrap_or(0);
+            let reg_timestamp_seconds = reg_timestamp / 1000;
+
+            let reg_date = Moscow
+                .timestamp_opt(reg_timestamp_seconds, 0)
+                .single()
+                .unwrap();
+
+            let now_msk = Utc::now().with_timezone(&Moscow);
+            let three_months_ago = now_msk - Duration::days(90);
+            let is_suspicious = reg_date > three_months_ago;
+
+            if is_suspicious {
+                let formatted_date = reg_date
+                    .format("%d.%m.%Y %H:%M")
+                    .to_string();
+                let duration = now_msk.signed_duration_since(reg_date);
+                let total_days = duration.num_days();
+                let months = total_days / 30;
+                let remaining_days_after_months = total_days % 30;
+
+                let weeks = duration.num_weeks();
+                let days = duration.num_days() % 7;
+
+                let diff_str = if months > 0 {
+                    if remaining_days_after_months > 0 {
+                        format!("{} мес. {} дн.", months, remaining_days_after_months)
+                    } else {
+                        format!("{} мес.", months)
+                    }
+                } else if weeks > 0 {
+                    if days > 0 {
+                        format!("{} нед. {} дн.", weeks, days)
+                    } else {
+                        format!("{} нед.", weeks)
+                    }
+                } else if total_days > 0 {
+                    format!("{} дн.", total_days)
+                } else if duration.num_hours() > 0 {
+                    format!("{} ч.", duration.num_hours())
+                } else if duration.num_minutes() > 0 {
+                    format!("{} мин.", duration.num_minutes())
+                } else if duration.num_seconds() > 0 {
+                    format!("{} сек.", duration.num_seconds())
+                } else {
+                    "дата не распознана".to_string()
+                };
+
+                let reg_info_formatted = format!("{} ({})", formatted_date, diff_str);
+
+                let current_chat = bot
+                    .send(GetChat::new(chat_id))
+                    .await?;
+
+                let user_mention = call.from.mention();
+
+                let admin_text = format!(
+                    "{} Участник {} (<code>@{}</code>) вступил в чат {}\n{} Имеет регистрацию в \
+                     ирисе: {}",
+                    Emoji::Information,
+                    user_mention,
+                    user_id,
+                    current_chat
+                        .title()
+                        .unwrap_or(""),
+                    Emoji::Date,
+                    reg_info_formatted,
+                );
+
+                let _ = bot
+                    .send(
+                        MessageMethods::send(&message)
+                            .chat_id(ADMIN_CHAT_ID)
+                            .text(admin_text)
+                            .reply_parameters_option(None::<ReplyParameters>),
+                    )
+                    .await;
+            }
+
+            let captcha_repo = CaptchaRepo::new(db);
+            let _ = captcha_repo
+                .insert(chat_id, user_id)
+                .await;
+
+            bot.send(
+                MessageMethods::edit(&message)
+                    .text("✅ Заявка обработана успешно, добро пожаловать в чат!")
+                    .message_id(message.message_id()),
+            )
+            .await?;
+
+            bot.send(ApproveChatJoinRequest::new(chat_id, user_id))
+                .await?;
+        }
+        Err(IrisApiError::Api {
+            code: 403,
+            ..
+        }) => {
+            bot.send(
+                AnswerCallbackQuery::new(call.id)
+                    .show_alert(true)
+                    .text("ℹ️ Вы не выдали боту право на доступ к вашей регистрации в ирисе."),
             )
             .await?;
         }
