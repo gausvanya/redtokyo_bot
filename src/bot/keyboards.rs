@@ -31,6 +31,15 @@ pub fn repeat_reg_keyboard(chat_id: i64, user_id: i64) -> InlineKeyboardMarkup {
 }
 
 #[inline]
+pub fn repeat_novo_reg_keyboard(chat_id: i64, user_id: i64) -> InlineKeyboardMarkup {
+    InlineKeyboardMarkup::new(vec![vec![
+        InlineKeyboardButton::new("Повторить попытку")
+            .callback_data(format!("repeat_novo_reg:{}:{}", chat_id, user_id))
+            .style("success"),
+    ]])
+}
+
+#[inline]
 pub fn captcha_keyboard(chat_id: i64, user_id: i64) -> InlineKeyboardMarkup {
     let mut buttons = vec![
         InlineKeyboardButton::new(".")
