@@ -30,7 +30,7 @@ reqwest = { version = "0.13.4", default-features = false, features = ["query", "
 
 chrono = { version = "0.4.45", default-features = false, features = ["std", "clock", "serde"] }
 chrono-tz = { version = "0.10.4", default-features = false, features = ["filter-by-regex"] }
-uuid = { version = "1.24.1", default-features = false, features = ["v4", "serde"] }
+uuid = { version = "1.25.0", default-features = false, features = ["v4", "serde"] }
 
 tracing = {version = "0.1.44", default-features = false}
 tracing-subscriber = { version = "0.3.23", default-features = false, features = ["env-filter", "fmt", "ansi"] }
