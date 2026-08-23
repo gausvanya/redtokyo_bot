@@ -61,13 +61,13 @@ where
 
             let admin_repo = AdminRepo::new(db.clone());
 
-            match admin_repo
+            if admin_repo
                 .get(user_id)
                 .await
                 .unwrap()
+                .is_some()
             {
-                Some(admin) => admin,
-                None => return Ok((request, EventReturn::default())),
+                return Ok((request, EventReturn::default()));
             };
 
             let (is_passed, reason, messages) = AntispamFilter
