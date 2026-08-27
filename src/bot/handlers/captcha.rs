@@ -21,7 +21,7 @@ use crate::{
             user::UserMention,
         },
     },
-    database::repo::captcha_repo::CaptchaRepo,
+    database::repo::{admins_repo::AdminRepo, captcha_repo::CaptchaRepo},
 };
 
 pub async fn captcha_chat_join_request_handler(
@@ -227,6 +227,17 @@ pub async fn chat_member_updated_handler(
         .new_chat_member
         .user();
     let chat_id = event.chat.id();
+
+    let admin_repo = AdminRepo::new(db.clone());
+
+    if user.id != event.from.id
+        && admin_repo
+            .get(event.from.id)
+            .await?
+            .is_some()
+    {
+        return Ok(());
+    }
 
     let captcha_repo = CaptchaRepo::new(db);
 
