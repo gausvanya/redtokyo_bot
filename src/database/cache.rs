@@ -7,7 +7,7 @@ use moka::future::Cache;
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
 
-use crate::bot::{libs::iris_api::OrderBookResponse, middlewares::media_group::MediaItem};
+use crate::bot::{libs::iris_api::OrderBookResponse, middlewares::media_group::MediaGroupState};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct SummonPayload {
@@ -27,10 +27,10 @@ pub static WARN_CACHE: LazyLock<Cache<String, u32>> = LazyLock::new(|| {
         .build()
 });
 
-pub static MEDIA_GROUP_CACHE: LazyLock<Cache<String, Arc<Mutex<Vec<MediaItem>>>>> =
+pub static MEDIA_GROUP_CACHE: LazyLock<Cache<String, Arc<Mutex<MediaGroupState>>>> =
     LazyLock::new(|| {
         Cache::builder()
-            .max_capacity(1000)
+            .max_capacity(10_000)
             .time_to_live(Duration::from_secs(300))
             .build()
     });
