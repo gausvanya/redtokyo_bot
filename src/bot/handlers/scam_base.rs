@@ -2,7 +2,7 @@ use sea_orm::{DatabaseConnection, IntoActiveModel, Set};
 use telers::{
     Bot, Extension,
     event::simple::HandlerResult,
-    methods::{DeleteMessage, SendDocument, SendMediaGroup, SendPhoto, SendVideo},
+    methods::{DeleteMessage, DeleteMessages, SendDocument, SendMediaGroup, SendPhoto, SendVideo},
     types::{FileId, InputMedia, InputMediaPhoto, InputMediaVideo, Message, ReplyParameters},
 };
 
@@ -96,9 +96,8 @@ pub async fn set_scam_command_handler(
             url
         );
 
-        let sent_msg: Option<Message>;
-
         let mut file_ids = Vec::new();
+        let sent_msgs: Vec<Message>;
 
         if let Some(mg_id) = msg.media_group_id()
             && let Some(mutex) = MEDIA_GROUP_CACHE
@@ -108,6 +107,7 @@ pub async fn set_scam_command_handler(
             file_ids = mutex
                 .lock()
                 .await
+                .items
                 .clone();
         }
 
@@ -121,7 +121,6 @@ pub async fn set_scam_command_handler(
                     } else {
                         None
                     };
-
                     match item.kind {
                         MediaKind::Photo => {
                             let mut p = InputMediaPhoto::new(FileId::new(item.file_id.clone()));
@@ -145,12 +144,10 @@ pub async fn set_scam_command_handler(
                 })
                 .collect();
 
-            let sent_messages = bot
-                .send(SendMediaGroup::new(SCAM_CHANNEL_ID, media))
-                .await?;
-            sent_msg = sent_messages
-                .into_iter()
-                .next();
+            sent_msgs = Vec::from(
+                bot.send(SendMediaGroup::new(SCAM_CHANNEL_ID, media))
+                    .await?,
+            );
         } else {
             let photo = msg
                 .photo()
@@ -158,31 +155,36 @@ pub async fn set_scam_command_handler(
             let video = msg.video();
             let document = msg.document();
 
-            if let Some(photo) = photo {
+            let single_msg = if let Some(photo) = photo {
                 let req = SendPhoto::new(SCAM_CHANNEL_ID, FileId::new(photo.file_id.clone()))
                     .caption(message_text.clone())
                     .parse_mode("HTML");
-                sent_msg = Some(bot.send(req).await?);
+                bot.send(req).await?
             } else if let Some(video) = video {
                 let req = SendVideo::new(SCAM_CHANNEL_ID, FileId::new(video.file_id.clone()))
                     .caption(message_text.clone())
                     .parse_mode("HTML");
-                sent_msg = Some(bot.send(req).await?);
+                bot.send(req).await?
             } else if let Some(doc) = document {
                 let req = SendDocument::new(SCAM_CHANNEL_ID, FileId::new(doc.file_id.clone()))
                     .caption(message_text.clone())
                     .parse_mode("HTML");
-                sent_msg = Some(bot.send(req).await?);
+                bot.send(req).await?
             } else {
                 let req = MessageMethods::send(&msg)
                     .chat_id(SCAM_CHANNEL_ID)
                     .reply_parameters_option(None::<ReplyParameters>)
                     .text(message_text.clone());
-                sent_msg = Some(bot.send(req).await?);
-            }
+                bot.send(req).await?
+            };
+
+            sent_msgs = vec![single_msg];
         }
 
-        if let Some(s_msg) = sent_msg {
+        if let Some(s_msg) = sent_msgs
+            .first()
+            .cloned()
+        {
             let s_chat_id_str = s_msg
                 .chat()
                 .id()
@@ -208,8 +210,12 @@ pub async fn set_scam_command_handler(
                 .send(reply_req)
                 .await?;
 
-            let scam_base_repo = ScamBaseRepo::new(db);
+            let channel_message_ids: Vec<i64> = sent_msgs
+                .iter()
+                .map(|m| m.message_id())
+                .collect();
 
+            let scam_base_repo = ScamBaseRepo::new(db);
             let result = scam_base_repo
                 .get(user.id)
                 .await;
@@ -217,23 +223,27 @@ pub async fn set_scam_command_handler(
             match result {
                 Ok(Some(i)) => {
                     let model = i.0;
-
                     let channel_chat_id = model.channel_chat_id;
-                    let channel_message_id = model.channel_message_id;
+                    let old_ids = model
+                        .channel_message_ids
+                        .clone();
 
                     let mut active_model = model.into_active_model();
                     active_model.chat_id = Set(msg.chat().id());
                     active_model.status = Set(true);
                     active_model.message_id = Set(reply_msg.message_id());
                     active_model.admin_id = Set(admin.0);
-                    active_model.channel_message_id = Set(s_msg.message_id());
+                    active_model.channel_message_ids = Set(channel_message_ids);
                     active_model.reason = Set(reason);
                     scam_base_repo
                         .update(active_model)
                         .await?;
 
-                    bot.send(DeleteMessage::new(channel_chat_id, channel_message_id))
-                        .await?;
+                    for old_id in old_ids {
+                        let _ = bot
+                            .send(DeleteMessage::new(channel_chat_id, old_id))
+                            .await;
+                    }
                 }
                 _ => {
                     scam_base_repo
@@ -243,7 +253,7 @@ pub async fn set_scam_command_handler(
                             reply_msg.message_id(),
                             admin.0,
                             SCAM_CHANNEL_ID,
-                            s_msg.message_id(),
+                            channel_message_ids,
                             reason,
                             true,
                         )
@@ -304,10 +314,12 @@ pub async fn remove_scam_command_handler(
                     }
 
                     let channel_chat_id = scam.channel_chat_id;
-                    let channel_message_id = scam.channel_message_id;
+                    let channel_message_ids = scam
+                        .channel_message_ids
+                        .clone();
 
                     let _ = bot
-                        .send(DeleteMessage::new(channel_chat_id, channel_message_id))
+                        .send(DeleteMessages::new(channel_chat_id, channel_message_ids))
                         .await;
                     scam_base_repo
                         .delete(scam)
@@ -386,7 +398,11 @@ pub async fn reason_scam_command_handler(
                         .channel_chat_id
                         .to_string()
                         .replace("-100", ""),
-                    scam_base.channel_message_id
+                    scam_base
+                        .channel_message_ids
+                        .first()
+                        .copied()
+                        .unwrap_or_default()
                 );
                 let photo_id = if scam_base.status {
                     RED_STATUS
