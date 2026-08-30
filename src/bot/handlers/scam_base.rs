@@ -97,7 +97,6 @@ pub async fn set_scam_command_handler(
         );
 
         let mut file_ids = Vec::new();
-        let sent_msgs: Vec<Message>;
 
         if let Some(mg_id) = msg.media_group_id()
             && let Some(mutex) = MEDIA_GROUP_CACHE
@@ -111,7 +110,7 @@ pub async fn set_scam_command_handler(
                 .clone();
         }
 
-        if !file_ids.is_empty() {
+        let sent_msgs: Vec<Message> = if !file_ids.is_empty() {
             let media: Vec<InputMedia> = file_ids
                 .iter()
                 .enumerate()
@@ -144,10 +143,10 @@ pub async fn set_scam_command_handler(
                 })
                 .collect();
 
-            sent_msgs = Vec::from(
+            Vec::from(
                 bot.send(SendMediaGroup::new(SCAM_CHANNEL_ID, media))
                     .await?,
-            );
+            )
         } else {
             let photo = msg
                 .photo()
@@ -178,8 +177,8 @@ pub async fn set_scam_command_handler(
                 bot.send(req).await?
             };
 
-            sent_msgs = vec![single_msg];
-        }
+            vec![single_msg]
+        };
 
         if let Some(s_msg) = sent_msgs
             .first()
