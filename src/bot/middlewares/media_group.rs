@@ -52,7 +52,6 @@ where
         if let Some(mg_id) = message.media_group_id() {
             let mg_id_str = mg_id.to_string();
 
-            // получаем существующий стейт альбома или создаём новый и кладём в кэш
             let mutex = if let Some(m) = MEDIA_GROUP_CACHE
                 .get(&mg_id_str)
                 .await
