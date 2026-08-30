@@ -54,7 +54,7 @@ impl ScamBaseRepo {
         message_id: i64,
         admin_id: i64,
         channel_chat_id: i64,
-        channel_message_id: i64,
+        channel_message_ids: Vec<i64>,
         reason: String,
         status: bool,
     ) -> Result<scam_base::Model, DbErr> {
@@ -65,7 +65,7 @@ impl ScamBaseRepo {
             message_id: Set(message_id),
             admin_id: Set(admin_id),
             channel_chat_id: Set(channel_chat_id),
-            channel_message_id: Set(channel_message_id),
+            channel_message_ids: Set(channel_message_ids),
             reason: Set(reason),
             status: Set(status),
         };
@@ -78,7 +78,7 @@ impl ScamBaseRepo {
                         scam_base::Column::MessageId,
                         scam_base::Column::AdminId,
                         scam_base::Column::ChannelChatId,
-                        scam_base::Column::ChannelMessageId,
+                        scam_base::Column::ChannelMessageIds,
                         scam_base::Column::Reason,
                         scam_base::Column::Status,
                     ])
