@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -12,7 +14,8 @@ pub struct Model {
     pub user_id: i64,
     pub admin_id: i64,
     pub channel_chat_id: i64,
-    pub channel_message_id: i64,
+    #[sea_orm(column_type = "Array(Arc::new(ColumnType::BigInteger))")]
+    pub channel_message_ids: Vec<i64>,
     pub reason: String,
     pub status: bool,
 }
