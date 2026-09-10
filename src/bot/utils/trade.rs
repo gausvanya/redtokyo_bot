@@ -6,7 +6,7 @@ const TARGET_VALUE: f64 = BASE_BET_GOLD * BASE_RATE;
 
 const ROUND_STEP: f64 = 5.0;
 const MIN_BET_LOWER: f64 = 15.0;
-const MIN_BET_UPPER: f64 = 100.0;
+const MIN_BET_UPPER: f64 = 50.0;
 
 pub struct DuelRate {
     pub min_bet: i64,
