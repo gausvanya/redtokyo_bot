@@ -25,11 +25,12 @@ pub async fn duel_command_handler(
     msg: Message,
     Extension(args): Extension<ParsedCommand>,
 ) -> anyhow::Result<()> {
-    if msg.chat().id() != DUEL_CHAT_ID {
+    let chat_id = msg.chat().id();
+
+    if chat_id != DUEL_CHAT_ID {
         return Ok(());
     }
 
-    let chat_id = msg.chat().id();
     let (user_id, username, full_name) = get_user_info(&msg);
 
     let raw_amount = args
