@@ -35,11 +35,12 @@ pub async fn set_scam_command_handler(
     Extension(db): Extension<DatabaseConnection>,
 ) -> anyhow::Result<()> {
     let admin = get_user_info(&msg);
+    let chat_id = msg.chat().id();
 
     let admin_repo = AdminRepo::new(db.clone());
 
     if !admin_repo
-        .get(admin.0)
+        .get(chat_id, admin.0)
         .await?
         .is_some()
     {
@@ -271,11 +272,12 @@ pub async fn remove_scam_command_handler(
     Extension(db): Extension<DatabaseConnection>,
 ) -> anyhow::Result<()> {
     let admin = get_user_info(&msg);
+    let chat_id = msg.chat().id();
 
     let admin_repo = AdminRepo::new(db.clone());
 
     if !admin_repo
-        .get(admin.0)
+        .get(chat_id, admin.0)
         .await?
         .is_some()
     {

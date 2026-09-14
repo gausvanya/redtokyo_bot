@@ -62,7 +62,7 @@ where
             let admin_repo = AdminRepo::new(db.clone());
 
             if admin_repo
-                .get(user_id)
+                .get(chat_id, user_id)
                 .await
                 .unwrap()
                 .is_some()

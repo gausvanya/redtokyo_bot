@@ -1,9 +1,9 @@
 use sea_orm::{
-    ActiveModelTrait, DatabaseConnection, DbErr, DeleteResult, EntityTrait, InsertResult,
-    IntoActiveModel, Set,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, DeleteResult, EntityTrait,
+    InsertResult, IntoActiveModel, QueryFilter, Set,
 };
 
-use crate::database::models::{admins, admins::ActiveModel, user};
+use crate::database::models::{admins, user};
 pub struct AdminRepo {
     pub db: DatabaseConnection,
 }
@@ -16,15 +16,21 @@ impl AdminRepo {
     }
 
     #[inline]
-    pub async fn get(&self, user_id: i64) -> Result<Option<admins::Model>, DbErr> {
-        admins::Entity::find_by_id(user_id)
+    pub async fn get(&self, chat_id: i64, user_id: i64) -> Result<Option<admins::Model>, DbErr> {
+        admins::Entity::find()
+            .filter(admins::Column::ChatId.eq(chat_id))
+            .filter(admins::Column::UserId.eq(user_id))
             .one(&self.db)
             .await
     }
 
     #[inline]
-    pub async fn get_all(&self) -> Result<Vec<(admins::Model, Vec<user::Model>)>, DbErr> {
+    pub async fn get_all(
+        &self,
+        chat_id: i64,
+    ) -> Result<Vec<(admins::Model, Vec<user::Model>)>, DbErr> {
         admins::Entity::find()
+            .filter(admins::Column::ChatId.eq(chat_id))
             .find_with_related(user::Entity)
             .all(&self.db)
             .await
@@ -39,9 +45,15 @@ impl AdminRepo {
     }
 
     #[inline]
-    pub async fn insert(&self, chat_id: i64) -> Result<InsertResult<ActiveModel>, DbErr> {
-        let active_model = ActiveModel {
-            user_id: Set(chat_id),
+    pub async fn insert(
+        &self,
+        chat_id: i64,
+        user_id: i64,
+    ) -> Result<InsertResult<admins::ActiveModel>, DbErr> {
+        let active_model = admins::ActiveModel {
+            id: Default::default(),
+            chat_id: Set(chat_id),
+            user_id: Set(user_id),
         };
 
         admins::Entity::insert(active_model)

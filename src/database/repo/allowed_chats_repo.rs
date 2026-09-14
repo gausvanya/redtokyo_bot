@@ -3,7 +3,7 @@ use sea_orm::{
     IntoActiveModel, Set,
 };
 
-use crate::database::models::{allowed_chats, allowed_chats::ActiveModel};
+use crate::database::models::allowed_chats;
 
 pub struct AllowedChatsRepo {
     pub db: DatabaseConnection,
@@ -32,8 +32,11 @@ impl AllowedChatsRepo {
     }
 
     #[inline]
-    pub async fn insert(&self, chat_id: i64) -> Result<InsertResult<ActiveModel>, DbErr> {
-        let active_model = ActiveModel {
+    pub async fn insert(
+        &self,
+        chat_id: i64,
+    ) -> Result<InsertResult<allowed_chats::ActiveModel>, DbErr> {
+        let active_model = allowed_chats::ActiveModel {
             chat_id: Set(chat_id),
         };
 

@@ -232,7 +232,7 @@ pub async fn chat_member_updated_handler(
 
     if user.id != event.from.id
         && admin_repo
-            .get(event.from.id)
+            .get(chat_id, event.from.id)
             .await?
             .is_some()
     {

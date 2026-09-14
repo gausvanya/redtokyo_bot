@@ -8,6 +8,7 @@ use crate::{
         filters::{command::ParsedCommand, get_user::GetUserInfo},
         methods::message::MessageMethods,
         utils::{
+            chat::GL_ADMINS,
             datetime::get_current_datetime,
             user::{get_user_info, get_user_mention},
         },
@@ -22,11 +23,12 @@ pub async fn set_warn_command_handler(
     Extension(db): Extension<DatabaseConnection>,
 ) -> anyhow::Result<()> {
     let admin_id = get_user_info(&msg).0;
+    let chat_id = msg.chat().id();
 
     let admin_repo = AdminRepo::new(db.clone());
 
     if !admin_repo
-        .get(admin_id)
+        .get(chat_id, admin_id)
         .await?
         .is_some()
     {
@@ -44,6 +46,20 @@ pub async fn set_warn_command_handler(
         .await?;
 
     if let Some(user) = user_obj {
+        if admin_repo
+            .get(chat_id, user.id)
+            .await?
+            .is_some()
+        {
+            bot.send(MessageMethods::send(&msg).text(format!(
+                "{} Выдача предупреждений другим администраторам запрещено",
+                Emoji::Warning,
+            )))
+            .await?;
+
+            return Ok(());
+        }
+
         let user_mention = get_user_mention(user.id, user.username.as_deref(), user.full_name);
 
         let msg_send = bot
@@ -57,7 +73,7 @@ pub async fn set_warn_command_handler(
             .await?;
 
         let warn_repo = VerbalWarnsRepo::new(db);
-        let timestamp = get_current_datetime() + Duration::days(1);
+        let timestamp = get_current_datetime() + Duration::days(3);
 
         warn_repo
             .insert(msg.chat().id(), user.id, admin_id, msg_send.message_id(), reason, timestamp)
@@ -74,13 +90,7 @@ pub async fn remove_warn_command_handler(
 ) -> anyhow::Result<()> {
     let admin_id = get_user_info(&msg).0;
 
-    let admin_repo = AdminRepo::new(db.clone());
-
-    if !admin_repo
-        .get(admin_id)
-        .await?
-        .is_some()
-    {
+    if !GL_ADMINS.contains(&admin_id) {
         return Ok(());
     }
 
@@ -176,7 +186,20 @@ pub async fn list_warns_command_handler(
             let expires_in = if time_left.num_seconds() <= 0 {
                 "снимается...".to_string()
             } else {
-                format!("{} ч. {} мин.", time_left.num_hours(), time_left.num_minutes() % 60)
+                let days = time_left.num_days();
+                let hours = time_left.num_hours() % 24;
+                let minutes = time_left.num_minutes() % 60;
+                let seconds = time_left.num_seconds() % 60;
+
+                if days > 0 {
+                    format!("{} дн. {} ч.", days, hours)
+                } else if time_left.num_hours() > 0 {
+                    format!("{} ч. {} мин.", time_left.num_hours(), minutes)
+                } else if minutes > 0 {
+                    format!("{} мин.", minutes)
+                } else {
+                    format!("{} сек.", seconds)
+                }
             };
 
             let url = format!(

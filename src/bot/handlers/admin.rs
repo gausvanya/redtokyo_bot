@@ -7,7 +7,7 @@ use crate::{
         filters::{command::ParsedCommand, get_user::GetUserInfo},
         methods::message::MessageMethods,
         utils::{
-            chat::GL_ADMINS,
+            chat::{GL_ADMINS, OWNER_IDS},
             user::{get_user_info, get_user_mention},
         },
     },
@@ -21,8 +21,9 @@ pub async fn add_admin_command_handler(
     Extension(db): Extension<DatabaseConnection>,
 ) -> anyhow::Result<()> {
     let sender_id = get_user_info(&msg).0;
+    let chat_id = msg.chat().id();
 
-    if !GL_ADMINS.contains(&sender_id) {
+    if !OWNER_IDS.contains(&sender_id) {
         return Ok(());
     }
 
@@ -31,12 +32,12 @@ pub async fn add_admin_command_handler(
         .resolve(&msg)
         .await?;
 
-    if let Some(chat) = admin_obj {
+    if let Some(user) = admin_obj {
         let admin_repo = AdminRepo::new(db.clone());
         let admin_result = admin_repo
-            .get(chat.id)
+            .get(chat_id, user.id)
             .await?;
-        let user_mention = get_user_mention(chat.id, chat.username.as_deref(), chat.full_name);
+        let user_mention = get_user_mention(user.id, user.username.as_deref(), user.full_name);
 
         if admin_result.is_some() {
             bot.send(MessageMethods::send(&msg).text(format!(
@@ -47,7 +48,7 @@ pub async fn add_admin_command_handler(
             .await?;
         } else {
             admin_repo
-                .insert(chat.id)
+                .insert(chat_id, user.id)
                 .await?;
 
             bot.send(MessageMethods::send(&msg).text(format!(
@@ -68,8 +69,9 @@ pub async fn rem_admin_command_handler(
     Extension(db): Extension<DatabaseConnection>,
 ) -> anyhow::Result<()> {
     let sender_id = get_user_info(&msg).0;
+    let chat_id = msg.chat().id();
 
-    if !GL_ADMINS.contains(&sender_id) {
+    if !OWNER_IDS.contains(&sender_id) {
         return Ok(());
     }
 
@@ -78,12 +80,12 @@ pub async fn rem_admin_command_handler(
         .resolve(&msg)
         .await?;
 
-    if let Some(chat) = admin_obj {
+    if let Some(user) = admin_obj {
         let admin_repo = AdminRepo::new(db.clone());
         let admin_result = admin_repo
-            .get(chat.id)
+            .get(chat_id, user.id)
             .await?;
-        let user_mention = get_user_mention(chat.id, chat.username.as_deref(), chat.full_name);
+        let user_mention = get_user_mention(user.id, user.username.as_deref(), user.full_name);
 
         if let Some(admin_res) = admin_result {
             bot.send(MessageMethods::send(&msg).text(format!(
@@ -114,6 +116,7 @@ pub async fn list_admin_command_handler(
     Extension(db): Extension<DatabaseConnection>,
 ) -> anyhow::Result<()> {
     let sender_id = get_user_info(&msg).0;
+    let chat_id = msg.chat().id();
 
     if !GL_ADMINS.contains(&sender_id) {
         return Ok(());
@@ -121,7 +124,7 @@ pub async fn list_admin_command_handler(
 
     let admin_repo = AdminRepo::new(db.clone());
     let admins = admin_repo
-        .get_all()
+        .get_all(chat_id)
         .await?;
     let mut buffer = String::new();
 
@@ -138,7 +141,7 @@ pub async fn list_admin_command_handler(
         "Пуст".to_string()
     };
 
-    let message_text = format!("{} Список администраторов:\n{}", Emoji::FacingUp, text);
+    let message_text = format!("{} Список администраторов чата:\n{}", Emoji::FacingUp, text);
 
     bot.send(MessageMethods::send(&msg).text(message_text))
         .await?;

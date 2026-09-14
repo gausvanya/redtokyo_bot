@@ -231,7 +231,7 @@ pub async fn garant_call_callback_handler(
     let admin_repo = AdminRepo::new(db.clone());
 
     let is_admin = admin_repo
-        .get(user_id)
+        .get(chat_id, user_id)
         .await?
         .is_some();
 
@@ -524,7 +524,7 @@ pub async fn unmute_callback_handler(
     let admin_repo = AdminRepo::new(db);
 
     let is_admin = admin_repo
-        .get(call.from.id)
+        .get(chat_id, call.from.id)
         .await?
         .is_some();
 
@@ -624,7 +624,7 @@ pub async fn ban_callback_handler(
     let admin_repo = AdminRepo::new(db.clone());
 
     let is_admin = admin_repo
-        .get(call.from.id)
+        .get(chat_id, call.from.id)
         .await?
         .is_some();
 

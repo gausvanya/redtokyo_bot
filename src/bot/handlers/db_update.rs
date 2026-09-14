@@ -31,9 +31,10 @@ pub async fn db_update_command_handler(
 ) -> anyhow::Result<()> {
     let admin_id = get_user_info(&msg).0;
     let admin_repo = AdminRepo::new(db.clone());
+    let chat_id = msg.chat().id();
 
     if !admin_repo
-        .get(admin_id)
+        .get(chat_id, admin_id)
         .await?
         .is_some()
     {
