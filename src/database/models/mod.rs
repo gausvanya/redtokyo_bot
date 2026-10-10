@@ -1,5 +1,6 @@
 pub mod admins;
 pub mod allowed_chats;
+pub mod bans;
 pub mod garant;
 pub mod scam_base;
 pub mod successful_captcha;

@@ -1,6 +1,9 @@
 use chrono::Duration;
 use sea_orm::DatabaseConnection;
-use telers::{Bot, Extension, types::Message};
+use telers::{
+    Bot, Extension,
+    types::{Message, ReplyParameters},
+};
 
 use crate::{
     bot::{
@@ -8,12 +11,15 @@ use crate::{
         filters::{command::ParsedCommand, get_user::GetUserInfo},
         methods::message::MessageMethods,
         utils::{
-            chat::GL_ADMINS,
+            chat::{GL_ADMINS, OWNER_IDS},
             datetime::get_current_datetime,
             user::{get_user_info, get_user_mention},
         },
     },
-    database::repo::{admins_repo::AdminRepo, verbal_warns_repo::VerbalWarnsRepo},
+    database::repo::{
+        admins_repo::AdminRepo, allowed_chats_repo::AllowedChatsRepo,
+        verbal_warns_repo::VerbalWarnsRepo,
+    },
 };
 
 pub async fn set_warn_command_handler(
@@ -76,9 +82,79 @@ pub async fn set_warn_command_handler(
         let timestamp = get_current_datetime() + Duration::days(3);
 
         warn_repo
-            .insert(msg.chat().id(), user.id, admin_id, msg_send.message_id(), reason, timestamp)
+            .insert(
+                msg.chat().id(),
+                user.id,
+                admin_id,
+                msg_send.message_id(),
+                reason,
+                Some(timestamp),
+            )
             .await?;
     }
+    Ok(())
+}
+
+pub async fn set_perm_warn_command_handler(
+    bot: Bot,
+    msg: Message,
+    Extension(args): Extension<ParsedCommand>,
+    Extension(db): Extension<DatabaseConnection>,
+) -> anyhow::Result<()> {
+    let admin_id = get_user_info(&msg).0;
+
+    if !OWNER_IDS.contains(&admin_id) {
+        return Ok(());
+    }
+
+    let user = args.get("user");
+    let reason = args
+        .require("reason")
+        .to_string();
+    let command = args
+        .require("command")
+        .to_string();
+
+    let user_obj = GetUserInfo::new(user.map(|s| s.to_string()), &db, bot.clone())
+        .resolve(&msg)
+        .await?;
+
+    let Some(user) = user_obj else {
+        return Ok(());
+    };
+
+    let user_mention = get_user_mention(user.id, user.username.as_deref(), user.full_name);
+    let warn_repo = VerbalWarnsRepo::new(db.clone());
+
+    let msg_send = bot
+        .send(MessageMethods::send(&msg).text(format!(
+            "{} Пользователю {} выдано устное предупреждение\n{} Причина: {}",
+            Emoji::Warning,
+            user_mention,
+            Emoji::Balloon,
+            reason
+        )))
+        .await?;
+
+    if command.contains("+глопермуст") {
+        let allowed_chats_repo = AllowedChatsRepo::new(db.clone());
+        let allowed_chats = allowed_chats_repo
+            .get_all()
+            .await?;
+
+        for chat in allowed_chats {
+            let chat_id = chat.chat_id;
+
+            warn_repo
+                .insert(chat_id, user.id, admin_id, msg_send.message_id(), reason.clone(), None)
+                .await?;
+        }
+    } else {
+        warn_repo
+            .insert(msg.chat().id(), user.id, admin_id, msg_send.message_id(), reason, None)
+            .await?;
+    }
+
     Ok(())
 }
 
@@ -109,6 +185,20 @@ pub async fn remove_warn_command_handler(
             .await?;
 
         if let Some(user_warn) = user_warn {
+            if user_warn
+                .timestamp
+                .is_none()
+                && !OWNER_IDS.contains(&admin_id)
+            {
+                bot.send(MessageMethods::send(&msg).text(format!(
+                    "{} У вас недостаточно прав для снятия этого предупреждения",
+                    Emoji::Warning,
+                )))
+                .await?;
+
+                return Ok(());
+            }
+
             bot.send(MessageMethods::send(&msg).text(format!(
                 "{} Пользователю {} снято последнее устное предупреждение",
                 Emoji::Warning,
@@ -181,25 +271,30 @@ pub async fn list_warns_command_handler(
         message_text += "Отсутствуют."
     } else {
         for (idx, warn) in warns.iter().enumerate() {
-            let time_left = warn.timestamp - get_current_datetime();
+            let expires_in = match warn.timestamp {
+                Some(timestamp) => {
+                    let time_left = timestamp - get_current_datetime();
 
-            let expires_in = if time_left.num_seconds() <= 0 {
-                "снимается...".to_string()
-            } else {
-                let days = time_left.num_days();
-                let hours = time_left.num_hours() % 24;
-                let minutes = time_left.num_minutes() % 60;
-                let seconds = time_left.num_seconds() % 60;
+                    if time_left.num_seconds() <= 0 {
+                        "снимается...".to_string()
+                    } else {
+                        let days = time_left.num_days();
+                        let hours = time_left.num_hours() % 24;
+                        let minutes = time_left.num_minutes() % 60;
+                        let seconds = time_left.num_seconds() % 60;
 
-                if days > 0 {
-                    format!("{} дн. {} ч.", days, hours)
-                } else if time_left.num_hours() > 0 {
-                    format!("{} ч. {} мин.", time_left.num_hours(), minutes)
-                } else if minutes > 0 {
-                    format!("{} мин.", minutes)
-                } else {
-                    format!("{} сек.", seconds)
+                        if days > 0 {
+                            format!("{} дн. {} ч.", days, hours)
+                        } else if time_left.num_hours() > 0 {
+                            format!("{} ч. {} мин.", time_left.num_hours(), minutes)
+                        } else if minutes > 0 {
+                            format!("{} мин.", minutes)
+                        } else {
+                            format!("{} сек.", seconds)
+                        }
+                    }
                 }
+                None => "навсегда".into(),
             };
 
             let url = format!(

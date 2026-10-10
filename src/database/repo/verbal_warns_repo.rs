@@ -45,7 +45,7 @@ impl VerbalWarnsRepo {
         admin_id: i64,
         message_id: i64,
         reason: String,
-        timestamp: NaiveDateTime,
+        timestamp: Option<NaiveDateTime>,
     ) -> Result<InsertResult<verbal_warns::ActiveModel>, DbErr> {
         let active_model = verbal_warns::ActiveModel {
             id: NotSet,

@@ -128,11 +128,6 @@ pub async fn captcha_callback_handler(
                         reg_info_formatted,
                     );
 
-                    let captcha_repo = CaptchaRepo::new(db.clone());
-                    let _ = captcha_repo
-                        .insert(chat_id, user_id)
-                        .await;
-
                     let _ = bot
                         .send(
                             MessageMethods::send(&message)
@@ -142,6 +137,11 @@ pub async fn captcha_callback_handler(
                         )
                         .await;
                 }
+
+                let captcha_repo = CaptchaRepo::new(db.clone());
+                let _ = captcha_repo
+                    .insert(chat_id, user_id)
+                    .await;
 
                 bot.send(
                     MessageMethods::edit(&message)
@@ -310,9 +310,9 @@ pub async fn repeat_reg_callback_handler(
                     .await?;
 
                 let captcha_repo = CaptchaRepo::new(db);
-                captcha_repo
+                let _ = captcha_repo
                     .insert(chat_id, user_id)
-                    .await?;
+                    .await;
 
                 bot.send(
                     MessageMethods::edit(&message)

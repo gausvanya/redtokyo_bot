@@ -21,7 +21,7 @@ use crate::{
             user::UserMention,
         },
     },
-    database::repo::{admins_repo::AdminRepo, captcha_repo::CaptchaRepo},
+    database::repo::{admins_repo::AdminRepo, bans_repo::BansRepo, captcha_repo::CaptchaRepo},
 };
 
 pub async fn captcha_chat_join_request_handler(
@@ -82,18 +82,33 @@ pub async fn captcha_chat_join_request_handler(
             .await?;
         let mut regular_count: i16 = 0;
         let mut nft_count: i16 = 0;
+        let day_ago = get_current_datetime() - Duration::days(1);
 
         for gift in gifts.gifts.iter() {
             match gift {
                 OwnedGift::Regular(gift) => {
                     if let Some(user) = &gift.sender_user
                         && !user.is_bot
+                        && gift.send_date
+                            <= day_ago
+                                .and_utc()
+                                .timestamp()
                     {
                         regular_count += 1;
                     }
                 }
-                OwnedGift::Unique(_) => {
-                    nft_count += 1;
+                OwnedGift::Unique(gift) => {
+                    if gift.send_date
+                        <= day_ago
+                            .and_utc()
+                            .timestamp()
+                        && gift
+                            .gift
+                            .is_from_blockchain
+                            != Some(true)
+                    {
+                        nft_count += 1;
+                    }
                 }
                 OwnedGift::Unknown(_) => return Ok(()),
             }
@@ -229,6 +244,18 @@ pub async fn chat_member_updated_handler(
     let chat_id = event.chat.id();
 
     let admin_repo = AdminRepo::new(db.clone());
+    let ban_repo = BansRepo::new(db.clone());
+
+    if ban_repo
+        .get(user.id)
+        .await?
+        .is_some()
+    {
+        let _ = bot
+            .send(BanChatMember::new(chat_id, user.id))
+            .await;
+        return Ok(());
+    }
 
     if user.id != event.from.id
         && admin_repo

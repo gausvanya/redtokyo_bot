@@ -71,6 +71,13 @@ impl AntispamFilter {
             return false;
         }
 
+        if !msg
+            .forward_origin()
+            .is_none()
+        {
+            return false;
+        }
+
         if let Some(u) = msg.from()
             && u.is_bot
         {

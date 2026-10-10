@@ -10,7 +10,7 @@ mod task;
 mod utils;
 
 use sea_orm::DatabaseConnection;
-use telers::{Bot, Dispatcher, Router, enums::UpdateType};
+use telers::{Bot, Dispatcher, Router, enums::UpdateType, methods::DeleteWebhook};
 use tokio::sync::broadcast::{Receiver, Sender, channel};
 
 use crate::{
@@ -49,6 +49,8 @@ pub async fn start(cfg: &Config, db: DatabaseConnection) -> anyhow::Result<()> {
         .build();
 
     let (shutdown_tx, _) = channel(1);
+    bot.send(DeleteWebhook::new().drop_pending_updates(true))
+        .await?;
 
     let _ = tokio::join!(
         tokio::spawn(run_dispatcher(dispatcher, shutdown_tx.subscribe())),

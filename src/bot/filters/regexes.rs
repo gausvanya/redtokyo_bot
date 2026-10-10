@@ -18,7 +18,10 @@ static RE_SET_GARANT: OnceLock<Regex> = OnceLock::new();
 static RE_REMOVE_GARANT: OnceLock<Regex> = OnceLock::new();
 static RE_CALL_GARANTS: OnceLock<Regex> = OnceLock::new();
 static RE_LIST_GARANTS: OnceLock<Regex> = OnceLock::new();
+static RE_BAN: OnceLock<Regex> = OnceLock::new();
+static RE_UNBAN: OnceLock<Regex> = OnceLock::new();
 static RE_SET_WARN: OnceLock<Regex> = OnceLock::new();
+static RE_SET_PERM_WARN: OnceLock<Regex> = OnceLock::new();
 static RE_REMOVE_WARN: OnceLock<Regex> = OnceLock::new();
 static RE_LIST_WARNS: OnceLock<Regex> = OnceLock::new();
 static RE_SET_SCAM: OnceLock<Regex> = OnceLock::new();
@@ -39,7 +42,7 @@ static RE_DEL_SUM: OnceLock<Regex> = OnceLock::new();
 static RE_REPEAT_REG: OnceLock<Regex> = OnceLock::new();
 static RE_REPEAT_NOVO_REG: OnceLock<Regex> = OnceLock::new();
 static RE_UNMUTE: OnceLock<Regex> = OnceLock::new();
-static RE_BAN: OnceLock<Regex> = OnceLock::new();
+static RE_BAN_CALLBACK: OnceLock<Regex> = OnceLock::new();
 
 // FILTERS
 pub static RE_REFERRAL: OnceLock<Regex> = OnceLock::new();
@@ -88,10 +91,33 @@ pub fn re_list_garants() -> &'static Regex {
 }
 
 #[inline]
+pub fn re_ban() -> &'static Regex {
+    regex!(
+        RE_BAN,
+        &format!(r#"(?i)^{PREFIX}запретить(?:\s+{USER_PATTERN})?(?:\s*\n(?P<reason>[\s\S]+))?$"#)
+    )
+}
+
+#[inline]
+pub fn re_unban() -> &'static Regex {
+    regex!(RE_UNBAN, &format!(r#"(?i)^{PREFIX}разрешить(?:\s+{USER_PATTERN})?(?:\n[\s\S]*)?$"#))
+}
+
+#[inline]
 pub fn re_set_warn() -> &'static Regex {
     regex!(
         RE_SET_WARN,
         &format!(r#"(?i)^{PREFIX}\+уст(?:\s+{USER_PATTERN})?\s*\n(?P<reason>[\s\S]+)$"#)
+    )
+}
+
+#[inline]
+pub fn re_set_perm_warn() -> &'static Regex {
+    regex!(
+        RE_SET_PERM_WARN,
+        &format!(
+            r#"(?i)^{PREFIX}(?P<command>\+(?:пермуст|глопермуст))(?:\s+{USER_PATTERN})?\s*\n(?P<reason>[\s\S]+)$"#
+        )
     )
 }
 
@@ -209,8 +235,8 @@ pub fn re_unmute() -> &'static Regex {
 }
 
 #[inline]
-pub fn re_ban() -> &'static Regex {
-    regex!(RE_BAN, r"^ban:(?P<chat_id>-?\d+):(?P<message_id>\d+|none):(?P<user_id>\d+)$")
+pub fn re_ban_callback() -> &'static Regex {
+    regex!(RE_BAN_CALLBACK, r"^ban:(?P<chat_id>-?\d+):(?P<message_id>\d+|none):(?P<user_id>\d+)$")
 }
 
 #[inline]

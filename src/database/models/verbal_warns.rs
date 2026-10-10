@@ -11,7 +11,8 @@ pub struct Model {
     pub admin_id: i64,
     pub message_id: i64,
     pub reason: String,
-    pub timestamp: DateTime,
+    #[sea_orm(nullable)]
+    pub timestamp: Option<DateTime>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

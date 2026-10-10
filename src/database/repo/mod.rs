@@ -1,5 +1,6 @@
 pub mod admins_repo;
 pub mod allowed_chats_repo;
+pub mod bans_repo;
 pub mod captcha_repo;
 pub mod garant_repo;
 pub mod scam_base;

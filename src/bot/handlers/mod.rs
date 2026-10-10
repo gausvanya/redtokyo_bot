@@ -7,6 +7,7 @@ use crate::bot::{
 
 mod admin;
 mod allowed_chats;
+mod ban;
 mod bot_welcome;
 mod captcha;
 mod db_update;
@@ -35,6 +36,8 @@ pub fn register_routers() -> Router {
                     .filter(CommandFilter::new(regexes::re_call_garants())),
                 Handler::new(verbal_warns::set_warn_command_handler)
                     .filter(CommandFilter::new(regexes::re_set_warn())),
+                Handler::new(verbal_warns::set_perm_warn_command_handler)
+                    .filter(CommandFilter::new(regexes::re_set_perm_warn())),
                 Handler::new(verbal_warns::remove_warn_command_handler)
                     .filter(CommandFilter::new(regexes::re_remove_warn())),
                 Handler::new(verbal_warns::list_warns_command_handler)
@@ -61,6 +64,10 @@ pub fn register_routers() -> Router {
                     .filter(CommandFilter::new(regexes::re_rem_admin())),
                 Handler::new(admin::list_admin_command_handler)
                     .filter(CommandFilter::new(regexes::re_list_admin())),
+                Handler::new(ban::ban_command_handler)
+                    .filter(CommandFilter::new(regexes::re_ban())),
+                Handler::new(ban::unban_command_handler)
+                    .filter(CommandFilter::new(regexes::re_unban())),
             ])
         })
         .on_chat_join_request(|observer| {
@@ -89,7 +96,7 @@ pub fn register_routers() -> Router {
                 Handler::new(callbacks::unmute_callback_handler)
                     .filter(CallbackFilter::new(regexes::re_unmute())),
                 Handler::new(callbacks::ban_callback_handler)
-                    .filter(CallbackFilter::new(regexes::re_ban())),
+                    .filter(CallbackFilter::new(regexes::re_ban_callback())),
             ])
         })
 }

@@ -12,7 +12,7 @@ async fn _migration(db: &DbConn) -> Result<(), DbErr> {
         .await?;
 
     db.get_schema_builder()
-        .register(models::admins::Entity)
+        .register(models::bans::Entity)
         .apply(db)
         .await?;
 
