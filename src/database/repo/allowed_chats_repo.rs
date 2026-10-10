@@ -3,7 +3,7 @@ use sea_orm::{
     IntoActiveModel, Set,
 };
 
-use crate::database::models::allowed_chats;
+use crate::database::models::{allowed_chats, allowed_chats::Model};
 
 pub struct AllowedChatsRepo {
     pub db: DatabaseConnection,
@@ -20,6 +20,13 @@ impl AllowedChatsRepo {
     pub async fn get(&self, chat_id: i64) -> Result<Option<allowed_chats::Model>, DbErr> {
         allowed_chats::Entity::find_by_id(chat_id)
             .one(&self.db)
+            .await
+    }
+
+    #[inline]
+    pub async fn get_all(&self) -> Result<Vec<Model>, DbErr> {
+        allowed_chats::Entity::find()
+            .all(&self.db)
             .await
     }
 
